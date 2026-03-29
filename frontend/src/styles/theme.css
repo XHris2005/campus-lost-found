@@ -1,0 +1,92 @@
+/* ============================================
+   CSS VARIABLES — LIGHT & DARK MODE
+   ============================================ */
+
+:root {
+  /* Primary Colors — Soft Blue */
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-hover: #1d4ed8;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f0f7ff;
+  --bg-tertiary: #e8f1fd;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+
+  /* Text Colors */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
+
+  /* Border Colors */
+  --border: #dbeafe;
+  --border-focus: #2563eb;
+
+  /* Status Colors */
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --warning: #d97706;
+  --warning-bg: #fef9c3;
+  --error: #dc2626;
+  --error-bg: #fee2e2;
+  --info: #0369a1;
+  --info-bg: #eff6ff;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 3px rgba(37, 99, 235, 0.08);
+  --shadow-md: 0 4px 16px rgba(37, 99, 235, 0.1);
+  --shadow-lg: 0 8px 32px rgba(37, 99, 235, 0.15);
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --navbar-height: 64px;
+
+  /* Transitions */
+  --transition: all 0.2s ease;
+}
+
+/* ============================================
+   DARK MODE — Emerald Accent
+   ============================================ */
+
+[data-theme='dark'] {
+  --primary: #10b981;
+  --primary-light: #34d399;
+  --primary-hover: #059669;
+  --accent: #10b981;
+  --accent-hover: #059669;
+
+  --bg-primary: #0a0f1e;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
+  --bg-card: #1e293b;
+  --bg-input: #0f172a;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-inverse: #0a0f1e;
+
+  --border: #1e3a5f;
+  --border-focus: #10b981;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  --success: #10b981;
+  --success-bg: #064e3b;
+  --info: #38bdf8;
+  --info-bg: #0c4a6e;
+}

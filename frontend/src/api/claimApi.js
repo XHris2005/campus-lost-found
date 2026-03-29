@@ -1,0 +1,68 @@
+import { auth } from '../firebase/firebaseConfig';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+async function getToken() {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+  return user.getIdToken();
+}
+
+export async function submitClaim(claimData) {
+  const token = await getToken();
+  const res = await fetch(`${BACKEND_URL}/api/claims`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(claimData),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Could not submit claim');
+  }
+  return res.json();
+}
+
+export async function getMyClaims() {
+  const token = await getToken();
+  const res = await fetch(`${BACKEND_URL}/api/claims/my`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Could not fetch claims');
+  return res.json();
+}
+
+export async function getAllClaims() {
+  const token = await getToken();
+  const res = await fetch(`${BACKEND_URL}/api/claims`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Could not fetch claims');
+  return res.json();
+}
+
+export async function processClaim(claimId, status) {
+  const token = await getToken();
+  const res = await fetch(`${BACKEND_URL}/api/claims/${claimId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error('Could not process claim');
+  return res.json();
+}
+
+export async function getMatchForLostItem(lostItemId) {
+  const token = await getToken();
+  const res = await fetch(
+    `${BACKEND_URL}/api/claims/match/${lostItemId}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error('Could not fetch match');
+  return res.json();
+}

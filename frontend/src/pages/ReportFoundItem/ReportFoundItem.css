@@ -1,0 +1,6 @@
+@import '../ReportLostItem/ReportLostItem.css';
+
+.found-success-icon {
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
