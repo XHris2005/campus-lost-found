@@ -70,43 +70,46 @@ export default function MyChats() {
 
             return (
               <div
-                key={chat.id}
-                className={`chat-card card card-hover ${isCompleted ? 'chat-card-completed' : ''}`}
-                onClick={() => navigate(`/chat/${chat.id}`)}
-              >
-                <div className="chat-card-icon">
-                  <FiMessageSquare size={22} />
-                </div>
+  key={chat.id}
+  className={`chat-card card card-hover ${isCompleted ? 'chat-card-completed' : ''}`}
+  onClick={() => navigate(`/chat/${chat.id}`)}
+>
+  {/* Item image as profile */}
+  <div className="chat-card-img">
+    {chat.lostItem?.imageURL ? (
+      <img src={chat.lostItem.imageURL} alt={chat.lostItem.name} />
+    ) : (
+      <FiMessageSquare size={22} />
+    )}
+  </div>
 
-                <div className="chat-card-info">
-                  <div className="chat-card-title-row">
-                    <h3 className="chat-card-title">Item Return Chat</h3>
-                    <span className={`badge ${isCompleted ? 'badge-success' : 'badge-warning'}`}>
-                      {isCompleted ? 'Completed' : 'Active'}
-                    </span>
-                  </div>
+  <div className="chat-card-info">
+    <div className="chat-card-title-row">
+      <h3 className="chat-card-title">
+        {chat.lostItem?.name || 'Item Return Chat'}
+      </h3>
+      <span className={`badge ${isCompleted ? 'badge-success' : 'badge-warning'}`}>
+        {isCompleted ? 'Completed' : 'Active'}
+      </span>
+    </div>
+    <div className="chat-card-meta">
+      <span><FiClock size={12} /> Created {formatDate(chat.createdAt)}</span>
+      {chat.lostItem?.category && (
+        <span>🏷️ {chat.lostItem.category}</span>
+      )}
+    </div>
+    <div className="chat-confirmations">
+      <span className={`confirm-item ${chat.ownerConfirmed ? 'confirmed' : ''}`}>
+        Owner {chat.ownerConfirmed ? '✅' : '⏳'}
+      </span>
+      <span className={`confirm-item ${chat.finderConfirmed ? 'confirmed' : ''}`}>
+        Finder {chat.finderConfirmed ? '✅' : '⏳'}
+      </span>
+    </div>
+  </div>
 
-                  <div className="chat-card-meta">
-                    <span>
-                      <FiClock size={12} />
-                      Created {formatDate(chat.createdAt)}
-                    </span>
-                  </div>
-
-                  <div className="chat-confirmations">
-                    <span className={`confirm-item ${chat.ownerConfirmed ? 'confirmed' : ''}`}>
-                      <FiUser size={12} />
-                      Owner {chat.ownerConfirmed ? '✅' : '⏳'}
-                    </span>
-                    <span className={`confirm-item ${chat.finderConfirmed ? 'confirmed' : ''}`}>
-                      <FiUser size={12} />
-                      Finder {chat.finderConfirmed ? '✅' : '⏳'}
-                    </span>
-                  </div>
-                </div>
-
-                <FiArrowRight size={18} className="chat-card-arrow" />
-              </div>
+  <FiArrowRight size={18} className="chat-card-arrow" />
+</div>
             );
           })}
         </div>

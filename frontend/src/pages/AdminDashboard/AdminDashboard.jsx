@@ -1,62 +1,72 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getMatches, updateMatchStatus, getStats, getUsers } from '../../api/adminApi';
-import AdminMatchCard from '../../components/AdminMatchCard/AdminMatchCard';
 import { useAuth } from '../../context/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase/firebaseConfig';
+import { getMatches, updateMatchStatus, getStats, getUsers } from '../../api/adminApi';
 import { getAllClaims, processClaim } from '../../api/claimApi';
 import { getAllChats } from '../../api/chatApi';
+import AdminMatchCard from '../../components/AdminMatchCard/AdminMatchCard';
 import ClaimCard from '../../components/ClaimCard/ClaimCard';
+import { deleteItem } from '../../api/adminApi';
+import {
+  FiSearch, FiPackage, FiClock, FiCheckCircle,
+  FiXCircle, FiUsers, FiMessageSquare, FiBarChart2,
+} from 'react-icons/fi';
+import './AdminDashboard.css';
+
+const TABS = [
+  { key: 'matches', label: 'Pending Matches', icon: <FiSearch size={16} /> },
+  { key: 'reviewed', label: 'Reviewed', icon: <FiCheckCircle size={16} /> },
+  { key: 'claims', label: 'Claims', icon: <FiPackage size={16} /> },
+  { key: 'chats', label: 'Chats', icon: <FiMessageSquare size={16} /> },
+  { key: 'users', label: 'Users', icon: <FiUsers size={16} /> },
+];
 
 export default function AdminDashboard() {
+  const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('matches');
   const [matches, setMatches] = useState([]);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
+  const [claims, setClaims] = useState([]);
+  const [adminChats, setAdminChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const { currentUser } = useAuth();
-  const navigate = useNavigate();
-  const [claims, setClaims] = useState([]);
-  const [adminChats, setAdminChats] = useState([]);
 
   useEffect(() => {
     fetchData();
   }, []);
 
   async function fetchData() {
-  setLoading(true);
-  setError('');
-  try {
-    const [matchesData, statsData, usersData, claimsData, chatsData] =
-  await Promise.all([
-    getMatches(),
-    getStats(),
-    getUsers(),
-    getAllClaims(),
-    getAllChats(),
-  ]);
-    setAdminChats(chatsData);
-    setMatches(matchesData);
-    setStats(statsData);
-    setUsers(usersData);
-    setClaims(claimsData);
-  } catch (err) {
-    setError('Could not load admin data. Please try again.');
+    setLoading(true);
+    setError('');
+    try {
+      const [matchesData, statsData, usersData, claimsData, chatsData] =
+        await Promise.all([
+          getMatches(),
+          getStats(),
+          getUsers(),
+          getAllClaims(),
+          getAllChats(),
+        ]);
+      setMatches(matchesData);
+      setStats(statsData);
+      setUsers(usersData);
+      setClaims(claimsData);
+      setAdminChats(chatsData);
+    } catch (err) {
+      setError('Could not load admin data. Please try again.');
+    }
+    setLoading(false);
   }
-  setLoading(false);
-}
 
   async function handleApprove(matchId) {
     setActionLoading(true);
     try {
       await updateMatchStatus(matchId, 'approved');
       setSuccessMsg('Match approved and owner notified!');
-      setMatches((prev) =>
-        prev.map((m) => m.id === matchId ? { ...m, status: 'approved' } : m)
+      setMatches(prev =>
+        prev.map(m => m.id === matchId ? { ...m, status: 'approved' } : m)
       );
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err) {
@@ -70,8 +80,8 @@ export default function AdminDashboard() {
     try {
       await updateMatchStatus(matchId, 'rejected');
       setSuccessMsg('Match rejected.');
-      setMatches((prev) =>
-        prev.map((m) => m.id === matchId ? { ...m, status: 'rejected' } : m)
+      setMatches(prev =>
+        prev.map(m => m.id === matchId ? { ...m, status: 'rejected' } : m)
       );
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err) {
@@ -81,249 +91,345 @@ export default function AdminDashboard() {
   }
 
   async function handleVerifyClaim(claimId) {
+    setActionLoading(true);
+    try {
+      await processClaim(claimId, 'verified');
+      setSuccessMsg('Claim verified — item marked as recovered!');
+      setClaims(prev =>
+        prev.map(c => c.id === claimId ? { ...c, status: 'verified' } : c)
+      );
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      setError('Could not verify claim.');
+    }
+    setActionLoading(false);
+  }
+
+  async function handleRejectClaim(claimId) {
+    setActionLoading(true);
+    try {
+      await processClaim(claimId, 'rejected');
+      setSuccessMsg('Claim rejected.');
+      setClaims(prev =>
+        prev.map(c => c.id === claimId ? { ...c, status: 'rejected' } : c)
+      );
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      setError('Could not reject claim.');
+    }
+    setActionLoading(false);
+  }
+
+  async function handleDelete(collection, itemId) {
+  if (!window.confirm('Are you sure you want to permanently delete this record?')) return;
   setActionLoading(true);
   try {
-    await processClaim(claimId, 'verified');
-    setSuccessMsg('Claim verified — item marked as recovered!');
-    setClaims((prev) =>
-      prev.map((c) => c.id === claimId ? { ...c, status: 'verified' } : c)
-    );
+    await deleteItem(collection, itemId);
+    setSuccessMsg('Record deleted successfully.');
+
+    // Remove from local state
+    if (collection === 'lostItems' || collection === 'foundItems') {
+      setMatches(prev => prev.filter(m =>
+        m.lostItemId !== itemId && m.foundItemId !== itemId
+      ));
+    }
+    if (collection === 'matches') {
+      setMatches(prev => prev.filter(m => m.id !== itemId));
+    }
+    if (collection === 'claims') {
+      setClaims(prev => prev.filter(c => c.id !== itemId));
+    }
     setTimeout(() => setSuccessMsg(''), 3000);
   } catch (err) {
-    setError('Could not verify claim.');
+    setError('Could not delete record.');
   }
   setActionLoading(false);
 }
 
-async function handleRejectClaim(claimId) {
-  setActionLoading(true);
-  try {
-    await processClaim(claimId, 'rejected');
-    setSuccessMsg('Claim rejected.');
-    setClaims((prev) =>
-      prev.map((c) => c.id === claimId ? { ...c, status: 'rejected' } : c)
-    );
-    setTimeout(() => setSuccessMsg(''), 3000);
-  } catch (err) {
-    setError('Could not reject claim.');
-  }
-  setActionLoading(false);
-}
+  const pendingMatches = matches.filter(m => m.status === 'pending');
+  const reviewedMatches = matches.filter(m => m.status !== 'pending');
 
-  async function handleLogout() {
-    await signOut(auth);
-    navigate('/login');
-  }
+  const statCards = stats ? [
+    {
+      icon: <FiSearch size={20} />,
+      label: 'Lost Items',
+      value: stats.totalLostItems,
+      color: 'stat-blue',
+    },
+    {
+      icon: <FiPackage size={20} />,
+      label: 'Found Items',
+      value: stats.totalFoundItems,
+      color: 'stat-green',
+    },
+    {
+      icon: <FiClock size={20} />,
+      label: 'Pending Matches',
+      value: stats.pendingMatches,
+      color: 'stat-orange',
+    },
+    {
+      icon: <FiCheckCircle size={20} />,
+      label: 'Approved',
+      value: stats.approvedMatches,
+      color: 'stat-success',
+    },
+    {
+      icon: <FiXCircle size={20} />,
+      label: 'Rejected',
+      value: stats.rejectedMatches,
+      color: 'stat-error',
+    },
+    {
+      icon: <FiUsers size={20} />,
+      label: 'Total Users',
+      value: stats.totalUsers,
+      color: 'stat-purple',
+    },
+  ] : [];
 
-  const pendingMatches = matches.filter((m) => m.status === 'pending');
-  const reviewedMatches = matches.filter((m) => m.status !== 'pending');
+  function getTabCount(key) {
+    if (key === 'matches') return pendingMatches.length;
+    if (key === 'reviewed') return reviewedMatches.length;
+    if (key === 'claims') return claims.length;
+    if (key === 'chats') return adminChats.length;
+    if (key === 'users') return users.length;
+    return 0;
+  }
 
   return (
-    <div style={styles.container}>
-      {/* Navbar */}
-      <div style={styles.navbar}>
-        <span style={styles.navTitle}>🎓 Campus Lost & Found — Admin</span>
-        <div style={styles.navRight}>
-          <span style={styles.adminEmail}>{currentUser?.email}</span>
-          <button style={styles.logoutBtn} onClick={handleLogout}>
-            Logout
-          </button>
+    <div className="admin-page">
+      {/* Header */}
+      <div className="admin-header">
+        <div>
+          <h1 className="page-title">Admin Dashboard</h1>
+          <p className="admin-subtitle">
+            Manage matches, claims, chats and users
+          </p>
         </div>
+        <button className="btn btn-secondary btn-sm" onClick={fetchData}>
+          Refresh
+        </button>
       </div>
 
-      <div style={styles.content}>
-        {/* Stats Cards */}
-        {stats && (
-          <div style={styles.statsGrid}>
-            <div style={styles.statCard}>
-              <span style={styles.statNumber}>{stats.totalLostItems}</span>
-              <span style={styles.statLabel}>Lost Items</span>
+      {/* Stats Grid */}
+      {stats && (
+        <div className="admin-stats-grid">
+          {statCards.map((stat) => (
+            <div key={stat.label} className={`admin-stat-card card ${stat.color}`}>
+              <div className="admin-stat-icon">{stat.icon}</div>
+              <div>
+                <span className="admin-stat-value">{stat.value}</span>
+                <span className="admin-stat-label">{stat.label}</span>
+              </div>
             </div>
-            <div style={styles.statCard}>
-              <span style={styles.statNumber}>{stats.totalFoundItems}</span>
-              <span style={styles.statLabel}>Found Items</span>
-            </div>
-            <div style={{ ...styles.statCard, borderTop: '4px solid #d97706' }}>
-              <span style={styles.statNumber}>{stats.pendingMatches}</span>
-              <span style={styles.statLabel}>Pending Matches</span>
-            </div>
-            <div style={{ ...styles.statCard, borderTop: '4px solid #16a34a' }}>
-              <span style={styles.statNumber}>{stats.approvedMatches}</span>
-              <span style={styles.statLabel}>Approved Matches</span>
-            </div>
-            <div style={{ ...styles.statCard, borderTop: '4px solid #dc2626' }}>
-              <span style={styles.statNumber}>{stats.rejectedMatches}</span>
-              <span style={styles.statLabel}>Rejected Matches</span>
-            </div>
-            <div style={styles.statCard}>
-              <span style={styles.statNumber}>{stats.totalUsers}</span>
-              <span style={styles.statLabel}>Total Users</span>
-            </div>
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div style={styles.tabs}>
-          {['matches', 'reviewed', 'users', 'claims', 'chats'].map((tab) => (
-            <button
-              key={tab}
-              style={{
-                ...styles.tab,
-                backgroundColor: activeTab === tab ? '#1a1a2e' : '#fff',
-                color: activeTab === tab ? '#fff' : '#1a1a2e',
-              }}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab === 'matches' && `🔎 Pending Matches (${pendingMatches.length})`}
-              {tab === 'reviewed' && `📋 Reviewed (${reviewedMatches.length})`}
-              {tab === 'users' && `👥 Users (${users.length})`}
-              {tab === 'claims' && `🏷️ Claims (${claims.length})`}
-              {tab === 'chats' && `💬 Chats (${adminChats.length})`}
-            </button>
           ))}
         </div>
+      )}
 
-        {/* Messages */}
-        {successMsg && <div style={styles.success}>{successMsg}</div>}
-        {error && <div style={styles.error}>{error}</div>}
+      {/* Messages */}
+      {successMsg && (
+        <div className="alert alert-success">{successMsg}</div>
+      )}
+      {error && (
+        <div className="alert alert-error">{error}</div>
+      )}
 
-        {/* Content */}
-        {loading ? (
-          <p style={styles.loadingText}>Loading...</p>
-        ) : (
-          <>
-            {/* Pending Matches Tab */}
-            {activeTab === 'matches' && (
-              <>
-                {pendingMatches.length === 0 ? (
-                  <p style={styles.emptyText}>No pending matches to review.</p>
-                ) : (
-                  pendingMatches.map((match) => (
-                    <AdminMatchCard
-                      key={match.id}
-                      match={match}
-                      onApprove={handleApprove}
-                      onReject={handleReject}
-                      loading={actionLoading}
-                    />
-                  ))
-                )}
-              </>
-            )}
+      {/* Tabs */}
+      <div className="admin-tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            className={`admin-tab ${activeTab === tab.key ? 'admin-tab-active' : ''}`}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.icon}
+            {tab.label}
+            <span className="admin-tab-count">{getTabCount(tab.key)}</span>
+          </button>
+        ))}
+      </div>
 
-            {/* Reviewed Matches Tab */}
-            {activeTab === 'reviewed' && (
-              <>
-                {reviewedMatches.length === 0 ? (
-                  <p style={styles.emptyText}>No reviewed matches yet.</p>
-                ) : (
-                  reviewedMatches.map((match) => (
-                    <AdminMatchCard
-                      key={match.id}
-                      match={match}
-                      onApprove={handleApprove}
-                      onReject={handleReject}
-                      loading={actionLoading}
-                    />
-                  ))
-                )}
-              </>
-            )}
-
-            {/* Users Tab */}
-            {activeTab === 'users' && (
-              <div style={styles.usersTable}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      {['Name', 'Email', 'Role', 'Joined'].map((h) => (
-                        <th key={h} style={styles.th}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} style={styles.tr}>
-                        <td style={styles.td}>{user.displayName}</td>
-                        <td style={styles.td}>{user.email}</td>
-                        <td style={styles.td}>
-                          <span style={{
-                            ...styles.roleBadge,
-                            backgroundColor:
-                              user.role === 'admin' ? '#ede9fe' :
-                              user.role === 'finder' ? '#dcfce7' : '#dbeafe',
-                            color:
-                              user.role === 'admin' ? '#7c3aed' :
-                              user.role === 'finder' ? '#16a34a' : '#1d4ed8',
-                          }}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td style={styles.td}>
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {activeTab === 'claims' && (
-                <>
-                {claims.length === 0 ? (
-                    <p style={styles.emptyText}>No claims submitted yet.</p>
-                ) : (
-                claims.map((claim) => (
-                    <ClaimCard
-                        key={claim.id}
-                        claim={claim}
-                        onVerify={handleVerifyClaim}
-                        onReject={handleRejectClaim}
-                        loading={actionLoading}
-                    />  
-                ))
-                )}
-            </>
-            )}
-            {activeTab === 'chats' && (
-              <>
-              {adminChats.length === 0 ? (
-                <p style={styles.emptyText}>No chats yet.</p>
+      {/* Tab Content */}
+      {loading ? (
+        <div className="loading-container">
+          <div className="spinner" />
+          <p>Loading admin data...</p>
+        </div>
+      ) : (
+        <div className="admin-content">
+          {/* Pending Matches */}
+          {activeTab === 'matches' && (
+            <>
+              {pendingMatches.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🎯</div>
+                  <h3>No pending matches</h3>
+                  <p>All matches have been reviewed</p>
+                </div>
               ) : (
-                <div style={styles.usersTable}>
-                  <table style={styles.table}>
+                pendingMatches.map(match => (
+                  <AdminMatchCard
+                    key={match.id}
+                    match={match}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    onDelete={() => handleDelete('matches', match.id)}
+                    loading={actionLoading}
+                  />
+                ))
+              )}
+            </>
+          )}
+
+          {/* Reviewed Matches */}
+          {activeTab === 'reviewed' && (
+            <>
+              {reviewedMatches.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">📋</div>
+                  <h3>No reviewed matches yet</h3>
+                  <p>Reviewed matches will appear here</p>
+                </div>
+              ) : (
+                reviewedMatches.map(match => (
+                  <AdminMatchCard
+                    key={match.id}
+                    match={match}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    onDelete={() => handleDelete('matches', match.id)}
+                    loading={actionLoading}
+                  />
+                ))
+              )}
+            </>
+          )}
+
+          {/* Claims */}
+          {activeTab === 'claims' && (
+            <>
+              {claims.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🏷️</div>
+                  <h3>No claims submitted yet</h3>
+                  <p>Claims will appear here when users submit them</p>
+                </div>
+              ) : (
+                claims.map(claim => (
+                  <ClaimCard
+                    key={claim.id}
+                    claim={claim}
+                    onVerify={handleVerifyClaim}
+                    onReject={handleRejectClaim}
+                    onDelete={() => handleDelete('claims', claim.id)}
+                    loading={actionLoading}
+                  />
+                ))
+              )}
+            </>
+          )}
+
+          {/* Chats */}
+          {activeTab === 'chats' && (
+  <>
+    {adminChats.length === 0 ? (
+      <div className="empty-state">
+        <div className="empty-state-icon">💬</div>
+        <h3>No chats yet</h3>
+        <p>Chats are created when matches are approved</p>
+      </div>
+    ) : (
+      <div className="admin-chats-list">
+        {adminChats.map(chat => (
+          <div key={chat.id} className="admin-chat-card card">
+            {/* Chat Header */}
+            <div className="admin-chat-header">
+              <div className="admin-chat-img">
+                {chat.lastMessage ? (
+                  <div className="chat-active-dot" />
+                ) : null}
+                <FiMessageSquare size={20} />
+              </div>
+              <div className="admin-chat-info">
+                <div className="admin-chat-title-row">
+                  <h3 className="admin-chat-title">
+                    Chat — {chat.id.slice(0, 8)}...
+                  </h3>
+                  <span className={`badge ${
+                    chat.status === 'completed'
+                      ? 'badge-success'
+                      : 'badge-warning'
+                  }`}>
+                    {chat.status}
+                  </span>
+                </div>
+                <div className="admin-chat-meta">
+                  <span>
+                    Owner: {chat.ownerConfirmed ? '✅ Confirmed' : '⏳ Pending'}
+                  </span>
+                  <span>
+                    Finder: {chat.finderConfirmed ? '✅ Confirmed' : '⏳ Pending'}
+                  </span>
+                  <span>
+                    Created: {new Date(chat.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => window.open(`/chat/${chat.id}`, '_blank')}
+              >
+                Monitor Chat
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </>
+)}
+
+          {/* Users */}
+          {activeTab === 'users' && (
+            <>
+              {users.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">👥</div>
+                  <h3>No users found</h3>
+                </div>
+              ) : (
+                <div className="admin-chats-table card">
+                  <table className="admin-table">
                     <thead>
                       <tr>
-                        {['Chat ID', 'Owner Confirmed', 'Finder Confirmed', 'Status', 'Created', 'Action'].map((h) => (
-                          <th key={h} style={styles.th}>{h}</th>
+                        {['Name', 'Email', 'Role', 'Joined'].map(h => (
+                          <th key={h} className="admin-th">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {adminChats.map((chat) => (
-                        <tr key={chat.id} style={styles.tr}>
-                          <td style={styles.td}>{chat.id.slice(0, 8)}...</td>
-                          <td style={styles.td}>{chat.ownerConfirmed ? '✅' : '⏳'}</td>
-                          <td style={styles.td}>{chat.finderConfirmed ? '✅' : '⏳'}</td>
-                          <td style={styles.td}>
-                            <span style={{
-                              ...styles.roleBadge,
-                              backgroundColor: chat.status === 'completed' ? '#dcfce7' : '#fef9c3',
-                              color: chat.status === 'completed' ? '#16a34a' : '#b45309',
-                              }}>
-                                {chat.status}
+                      {users.map(user => (
+                        <tr key={user.id} className="admin-tr">
+                          <td className="admin-td">
+                            <div className="user-name-cell">
+                              <div className="user-avatar">
+                                {user.displayName?.charAt(0).toUpperCase()}
+                              </div>
+                              <span>{user.displayName}</span>
+                            </div>
+                          </td>
+                          <td className="admin-td admin-td-muted">{user.email}</td>
+                          <td className="admin-td">
+                            <span className={`badge ${
+                              user.role === 'admin' ? 'badge-admin' :
+                              user.role === 'finder' ? 'badge-success' : 'badge-info'
+                            }`}>
+                              {user.role}
                             </span>
                           </td>
-                          <td style={styles.td}>
-                            {new Date(chat.createdAt).toLocaleDateString()}
-                          </td>
-                          <td style={styles.td}>
-                            <button
-                              style={styles.viewChatBtn}
-                              onClick={() => window.open(`/chat/${chat.id}`, '_blank')}
-                            >
-                              View
-                            </button>
+                          <td className="admin-td admin-td-muted">
+                            {new Date(user.createdAt).toLocaleDateString()}
                           </td>
                         </tr>
                       ))}
@@ -333,95 +439,8 @@ async function handleRejectClaim(claimId) {
               )}
             </>
           )}
-          </>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
-
-const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f0f4f8' },
-  navbar: {
-    backgroundColor: '#1a1a2e',
-    padding: '0 1.5rem',
-    height: '60px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  navTitle: { color: '#fff', fontWeight: '700', fontSize: '1rem' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '1rem' },
-  adminEmail: { color: '#aaa', fontSize: '0.85rem' },
-  logoutBtn: {
-    padding: '0.4rem 1rem',
-    backgroundColor: 'transparent',
-    color: '#fff',
-    border: '1px solid #444',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-  },
-  content: { padding: '2rem', maxWidth: '1000px', margin: '0 auto' },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-    gap: '1rem',
-    marginBottom: '2rem',
-  },
-  statCard: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    padding: '1.25rem',
-    textAlign: 'center',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    borderTop: '4px solid #1a1a2e',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.25rem',
-  },
-  statNumber: { fontSize: '2rem', fontWeight: '700', color: '#1a1a2e' },
-  statLabel: { fontSize: '0.75rem', color: '#666', fontWeight: '500' },
-  tabs: { display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' },
-  tab: {
-    padding: '0.6rem 1.25rem',
-    border: '2px solid #1a1a2e',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: '600',
-  },
-  success: {
-    backgroundColor: '#dcfce7',
-    color: '#16a34a',
-    padding: '0.75rem 1rem',
-    borderRadius: '8px',
-    marginBottom: '1rem',
-    fontSize: '0.9rem',
-  },
-  error: {
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
-    padding: '0.75rem 1rem',
-    borderRadius: '8px',
-    marginBottom: '1rem',
-    fontSize: '0.9rem',
-  },
-  viewChatBtn: {
-    padding: '0.3rem 0.75rem',
-    backgroundColor: '#0891b2',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-  },
-  loadingText: { color: '#666', textAlign: 'center', padding: '2rem' },
-  emptyText: { color: '#888', textAlign: 'center', padding: '2rem' },
-  usersTable: { backgroundColor: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th: { padding: '0.75rem 1rem', backgroundColor: '#f8fafc', textAlign: 'left', fontSize: '0.8rem', fontWeight: '700', color: '#666', borderBottom: '1px solid #eee' },
-  tr: { borderBottom: '1px solid #f0f0f0' },
-  td: { padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#333' },
-  roleBadge: { padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600' },
-};

@@ -8,22 +8,31 @@ const { verifyToken } = require('../middleware/authMiddleware');
 router.get('/my', verifyToken, async (req, res) => {
   try {
     const [ownerChats, finderChats] = await Promise.all([
-      db.collection('chats')
-        .where('ownerId', '==', req.user.uid)
-        .where('status', '==', 'active')
-        .get(),
-      db.collection('chats')
-        .where('finderId', '==', req.user.uid)
-        .where('status', '==', 'active')
-        .get(),
+      db.collection('chats').where('ownerId', '==', req.user.uid).where('status', '==', 'active').get(),
+      db.collection('chats').where('finderId', '==', req.user.uid).where('status', '==', 'active').get(),
     ]);
 
-    const chats = [
-      ...ownerChats.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
-      ...finderChats.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+    const allChats = [
+      ...ownerChats.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      ...finderChats.docs.map(doc => ({ id: doc.id, ...doc.data() })),
     ];
 
-    res.json(chats);
+    // Fetch lost item details for each chat
+    const chatsWithItems = await Promise.all(
+      allChats.map(async (chat) => {
+        try {
+          const lostItemDoc = await db.collection('lostItems').doc(chat.lostItemId).get();
+          const lostItem = lostItemDoc.exists
+            ? { id: lostItemDoc.id, ...lostItemDoc.data() }
+            : null;
+          return { ...chat, lostItem };
+        } catch {
+          return chat;
+        }
+      })
+    );
+
+    res.json(chatsWithItems);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not fetch chats' });
@@ -76,7 +85,6 @@ router.get('/:chatId/messages', verifyToken, async (req, res) => {
   try {
     const { chatId } = req.params;
 
-    // Verify user is part of this chat or is admin
     const chatDoc = await db.collection('chats').doc(chatId).get();
     if (!chatDoc.exists) {
       return res.status(404).json({ error: 'Chat not found' });
@@ -92,6 +100,24 @@ router.get('/:chatId/messages', verifyToken, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    // Safely fetch lost item details
+    let lostItemImage = null;
+    let lostItemName = null;
+    try {
+      if (chat.lostItemId) {
+        const lostItemDoc = await db
+          .collection('lostItems')
+          .doc(chat.lostItemId)
+          .get();
+        if (lostItemDoc.exists) {
+          lostItemImage = lostItemDoc.data()?.imageURL || null;
+          lostItemName = lostItemDoc.data()?.name || null;
+        }
+      }
+    } catch (itemErr) {
+      console.error('Could not fetch lost item details:', itemErr);
+    }
+
     const messagesSnap = await db
       .collection('chats')
       .doc(chatId)
@@ -99,18 +125,25 @@ router.get('/:chatId/messages', verifyToken, async (req, res) => {
       .orderBy('createdAt', 'asc')
       .get();
 
-    const messages = messagesSnap.docs.map((doc) => ({
+    const messages = messagesSnap.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    res.json({ chat: { id: chatDoc.id, ...chat }, messages });
+    res.json({
+      chat: {
+        id: chatDoc.id,
+        ...chat,
+        lostItemImage,
+        lostItemName,
+      },
+      messages,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not fetch messages' });
   }
 });
-
 // POST /api/chats/:chatId/messages — send a message
 router.post('/:chatId/messages', verifyToken, async (req, res) => {
   try {

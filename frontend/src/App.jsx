@@ -14,6 +14,7 @@ import ClaimItem from './pages/ClaimItem/ClaimItem';
 import Chat from './pages/Chat/Chat';
 import MyChats from './pages/MyChats/MyChats';
 import AppLayout from './components/AppLayout/AppLayout';
+import NotFound from './pages/NotFound/NotFound';
 
 export default function App() {
   return (
@@ -64,6 +65,7 @@ export default function App() {
                 <AppLayout> <MyChats /> </AppLayout>
               </ProtectedRoute>
             } />
+            <Route path='*' element={<NotFound></NotFound>}></Route>
           </Routes>
         </AuthProvider>
       </ThemeProvider>

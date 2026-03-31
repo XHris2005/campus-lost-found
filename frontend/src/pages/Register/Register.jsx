@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase/firebaseConfig';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   FiUser, FiMail, FiLock, FiArrowRight,
   FiSearch, FiSun, FiMoon,
@@ -23,6 +24,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { currentUser } = useAuth();
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -59,6 +61,10 @@ export default function Register() {
       setLoading(false);
     }
   }
+  
+  useEffect(() => {
+    if (currentUser) navigate('/dashboard', { replace: true });
+  }, [currentUser]);
 
   return (
     <div className="auth-page">

@@ -1,204 +1,102 @@
-export default function AdminMatchCard({ match, onApprove, onReject, loading }) {
-  const { lostItem, foundItem, combinedScore, status } = match;
+import { FiPackage } from 'react-icons/fi';
+import './AdminMatchCard.css';
 
+export default function AdminMatchCard({ match, onApprove, onReject, onDelete, loading }) {
+  const { lostItem, foundItem, combinedScore, status } = match;
   const scorePercent = Math.round((combinedScore || 0) * 100);
+
   const scoreColor =
-    scorePercent >= 85 ? '#16a34a' :
-    scorePercent >= 70 ? '#d97706' : '#dc2626';
+    scorePercent >= 85 ? 'score-high' :
+    scorePercent >= 70 ? 'score-medium' : 'score-low';
 
   return (
-    <div style={styles.card}>
-      {/* Score Badge */}
-      <div style={styles.scoreRow}>
-        <span style={styles.matchLabel}>AI Match Score</span>
-        <span style={{ ...styles.scoreBadge, color: scoreColor, borderColor: scoreColor }}>
+    <div className="match-card card">
+      {/* Score Row */}
+      <div className="match-score-row">
+        <span className="match-score-label">AI Match Score</span>
+        <span className={`match-score-badge ${scoreColor}`}>
           {scorePercent}% match
         </span>
-        <span style={{
-          ...styles.statusBadge,
-          backgroundColor:
-            status === 'approved' ? '#dcfce7' :
-            status === 'rejected' ? '#fee2e2' : '#fef9c3',
-          color:
-            status === 'approved' ? '#16a34a' :
-            status === 'rejected' ? '#dc2626' : '#b45309',
-        }}>
+        <span className={`badge ${
+          status === 'approved' ? 'badge-success' :
+          status === 'rejected' ? 'badge-error' : 'badge-warning'
+        }`}>
           {status}
         </span>
       </div>
 
-      {/* Items Comparison */}
-      <div style={styles.comparison}>
+      {/* Comparison */}
+      <div className="match-comparison">
         {/* Lost Item */}
-        <div style={styles.itemBox}>
-          <span style={styles.itemLabel}>🔍 Lost Item</span>
-          {lostItem?.imageURL && (
-            <img src={lostItem.imageURL} alt={lostItem.name} style={styles.image} />
+        <div className="match-item-box">
+          <span className="match-item-label lost-label">🔍 Lost Item</span>
+          {lostItem?.imageURL ? (
+            <img src={lostItem.imageURL} alt={lostItem.name} className="match-item-img" />
+          ) : (
+            <div className="match-item-no-img">
+              <FiPackage size={24} />
+            </div>
           )}
-          <p style={styles.itemName}>{lostItem?.name || 'Unknown'}</p>
-          <p style={styles.itemDetail}>{lostItem?.description}</p>
-          <p style={styles.itemMeta}>📍 {lostItem?.location}</p>
-          <p style={styles.itemMeta}>🏷️ {lostItem?.category}</p>
-          <p style={styles.itemMeta}>👤 {lostItem?.userEmail}</p>
+          <p className="match-item-name">{lostItem?.name || 'Unknown'}</p>
+          <p className="match-item-desc">{lostItem?.description}</p>
+          <p className="match-item-meta">📍 {lostItem?.location}</p>
+          <p className="match-item-meta">🏷️ {lostItem?.category}</p>
+          <p className="match-item-meta">👤 {lostItem?.userEmail}</p>
         </div>
 
-        {/* Divider */}
-        <div style={styles.divider}>
-          <span style={styles.vsText}>VS</span>
+        {/* VS */}
+        <div className="match-vs">
+          <span>VS</span>
         </div>
 
         {/* Found Item */}
-        <div style={styles.itemBox}>
-          <span style={styles.itemLabel}>📦 Found Item</span>
-          {foundItem?.imageURL && (
-            <img src={foundItem.imageURL} alt={foundItem.name} style={styles.image} />
+        <div className="match-item-box">
+          <span className="match-item-label found-label">📦 Found Item</span>
+          {foundItem?.imageURL ? (
+            <img src={foundItem.imageURL} alt={foundItem.name} className="match-item-img" />
+          ) : (
+            <div className="match-item-no-img">
+              <FiPackage size={24} />
+            </div>
           )}
-          <p style={styles.itemName}>{foundItem?.name || 'Unknown'}</p>
-          <p style={styles.itemDetail}>{foundItem?.description}</p>
-          <p style={styles.itemMeta}>📍 {foundItem?.location}</p>
-          <p style={styles.itemMeta}>🏷️ {foundItem?.category}</p>
-          <p style={styles.itemMeta}>👤 {foundItem?.userEmail}</p>
+          <p className="match-item-name">{foundItem?.name || 'Unknown'}</p>
+          <p className="match-item-desc">{foundItem?.description}</p>
+          <p className="match-item-meta">📍 {foundItem?.location}</p>
+          <p className="match-item-meta">🏷️ {foundItem?.category}</p>
+          <p className="match-item-meta">👤 {foundItem?.userEmail}</p>
         </div>
       </div>
 
-      {/* Action Buttons — only show for pending matches */}
-      {status === 'pending' && (
-        <div style={styles.actions}>
-          <button
-            style={styles.approveButton}
-            onClick={() => onApprove(match.id)}
-            disabled={loading}
-          >
-            ✅ Approve Match
-          </button>
-          <button
-            style={styles.rejectButton}
-            onClick={() => onReject(match.id)}
-            disabled={loading}
-          >
-            ❌ Reject Match
-          </button>
-        </div>
-      )}
+      {/* Actions — at the bottom */}
+      <div className="match-actions">
+        {status === 'pending' && (
+          <>
+            <button
+              className="btn btn-success"
+              onClick={() => onApprove(match.id)}
+              disabled={loading}
+            >
+              ✅ Approve Match
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={() => onReject(match.id)}
+              disabled={loading}
+            >
+              ❌ Reject Match
+            </button>
+          </>
+        )}
+        {/* Delete button — always visible to admin */}
+        <button
+          className="btn btn-ghost btn-sm delete-btn"
+          onClick={onDelete}
+          disabled={loading}
+          title="Permanently delete this record"
+        >
+          🗑️ Delete
+        </button>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-    padding: '1.5rem',
-    marginBottom: '1.5rem',
-  },
-  scoreRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    marginBottom: '1.25rem',
-    flexWrap: 'wrap',
-  },
-  matchLabel: {
-    fontSize: '0.85rem',
-    color: '#666',
-    fontWeight: '500',
-  },
-  scoreBadge: {
-    padding: '0.25rem 0.75rem',
-    borderRadius: '20px',
-    border: '2px solid',
-    fontSize: '0.85rem',
-    fontWeight: '700',
-  },
-  statusBadge: {
-    padding: '0.25rem 0.75rem',
-    borderRadius: '20px',
-    fontSize: '0.8rem',
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  comparison: {
-    display: 'grid',
-    gridTemplateColumns: '1fr auto 1fr',
-    gap: '1rem',
-    alignItems: 'start',
-    marginBottom: '1.25rem',
-  },
-  itemBox: {
-    backgroundColor: '#f8fafc',
-    borderRadius: '8px',
-    padding: '1rem',
-  },
-  itemLabel: {
-    display: 'block',
-    fontSize: '0.8rem',
-    fontWeight: '700',
-    color: '#1a1a2e',
-    marginBottom: '0.5rem',
-  },
-  image: {
-    width: '100%',
-    height: '120px',
-    objectFit: 'cover',
-    borderRadius: '6px',
-    marginBottom: '0.5rem',
-  },
-  itemName: {
-    margin: '0 0 0.25rem',
-    fontSize: '0.95rem',
-    fontWeight: '600',
-    color: '#1a1a2e',
-  },
-  itemDetail: {
-    margin: '0 0 0.5rem',
-    fontSize: '0.8rem',
-    color: '#666',
-    lineHeight: '1.4',
-  },
-  itemMeta: {
-    margin: '0.2rem 0',
-    fontSize: '0.75rem',
-    color: '#888',
-  },
-  divider: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: '3rem',
-  },
-  vsText: {
-    fontSize: '0.85rem',
-    fontWeight: '700',
-    color: '#999',
-    backgroundColor: '#f0f4f8',
-    padding: '0.4rem 0.6rem',
-    borderRadius: '50%',
-  },
-  actions: {
-    display: 'flex',
-    gap: '1rem',
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-  },
-  approveButton: {
-    padding: '0.6rem 1.5rem',
-    backgroundColor: '#16a34a',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-  rejectButton: {
-    padding: '0.6rem 1.5rem',
-    backgroundColor: '#dc2626',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-};

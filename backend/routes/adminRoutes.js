@@ -237,4 +237,22 @@ router.get('/users', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
+// DELETE /api/admin/items/:collection/:itemId
+router.delete('/items/:collection/:itemId', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { collection, itemId } = req.params;
+    const allowed = ['lostItems', 'foundItems', 'matches', 'claims'];
+
+    if (!allowed.includes(collection)) {
+      return res.status(400).json({ error: 'Invalid collection' });
+    }
+
+    await db.collection(collection).doc(itemId).delete();
+    res.json({ message: `Item deleted from ${collection}` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not delete item' });
+  }
+});
+
 module.exports = router;

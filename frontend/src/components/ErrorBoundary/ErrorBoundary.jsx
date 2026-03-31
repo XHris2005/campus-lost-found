@@ -1,4 +1,5 @@
-import { Component } from "react";
+import { Component } from 'react';
+import './ErrorBoundary.css';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -11,25 +12,45 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error("ErrorBoundary caught:", error, info);
+    console.error('ErrorBoundary caught:', error, info);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "2rem", textAlign: "center" }}>
-          <h2>Something went wrong.</h2>
-          <p style={{ color: "#666", marginBottom: "1rem" }}>
-            {this.state.error?.message || "An unexpected error occurred."}
-          </p>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-          >
-            Try Again
-          </button>
+        <div className="error-boundary">
+          <div className="error-boundary-card">
+            <div className="error-boundary-icon">⚠️</div>
+            <h2>Something went wrong</h2>
+            <p>
+              An unexpected error occurred. Please try refreshing the page.
+              If the problem persists, contact support.
+            </p>
+            <div className="error-boundary-actions">
+              <button
+                className="btn btn-primary"
+                onClick={() => window.location.reload()}
+              >
+                Refresh Page
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => window.location.href = '/dashboard'}
+              >
+                Go to Dashboard
+              </button>
+            </div>
+            {import.meta.env.DEV && (
+              <details className="error-boundary-details">
+                <summary>Error details (dev only)</summary>
+                <pre>{this.state.error?.toString()}</pre>
+              </details>
+            )}
+          </div>
         </div>
       );
     }
+
     return this.props.children;
   }
 }

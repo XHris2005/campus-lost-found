@@ -109,14 +109,22 @@ export default function Chat() {
         </button>
         <div className="chat-header-info">
           <div className="chat-header-avatar">
-            <FiUser size={18} />
-          </div>
+  {chat?.lostItemImage ? (
+    <img
+      src={chat.lostItemImage}
+      alt="Item"
+      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+    />
+  ) : (
+    <FiUser size={18} />
+  )}
+</div>
           <div>
             <h2 className="chat-header-title">
-              {isAdminViewing
-                ? '👁️ Monitoring Chat'
-                : isOwner ? 'Chat with Finder' : 'Chat with Owner'}
-            </h2>
+  {isAdminViewing
+    ? '👁️ Monitoring Chat'
+    : `${chat?.lostItemName || 'Item'} Recovery`}
+</h2>
             <span className={`badge ${isCompleted ? 'badge-success' : 'badge-warning'}`}>
               {isCompleted ? 'Completed' : 'Active'}
             </span>

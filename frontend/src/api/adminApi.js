@@ -48,3 +48,16 @@ export async function getUsers() {
   if (!res.ok) throw new Error('Could not fetch users');
   return res.json();
 }
+
+export async function deleteItem(collection, itemId) {
+  const token = await getToken();
+  const res = await fetch(
+    `${BACKEND_URL}/api/admin/items/${collection}/${itemId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  if (!res.ok) throw new Error('Could not delete item');
+  return res.json();
+}
