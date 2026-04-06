@@ -51,14 +51,6 @@ export default function ClaimCard({ claim, onVerify, onReject, onDelete, loading
             </button>
           </>
           )}
-          <button
-            className="btn btn-ghost btn-sm delete-btn"
-            onClick={onDelete}
-            disabled={loading}
-            title="Delete this record"
-          >
-            🗑️ Delete
-          </button>
         </div>
       )}
     </div>

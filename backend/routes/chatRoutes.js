@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../config/firebase');
 const { verifyToken } = require('../middleware/authMiddleware');
+const sanitize = require('../utils/sanitize'); // add this import
 
 // GET /api/chats/my — get chats for current user
 router.get('/my', verifyToken, async (req, res) => {
@@ -148,8 +149,8 @@ router.get('/:chatId/messages', verifyToken, async (req, res) => {
 router.post('/:chatId/messages', verifyToken, async (req, res) => {
   try {
     const { chatId } = req.params;
-    const { text } = req.body;
-
+    const text = sanitize(req.body.text);
+    
     if (!text || !text.trim()) {
       return res.status(400).json({ error: 'Message cannot be empty' });
     }
@@ -235,64 +236,101 @@ router.patch('/:chatId/confirm', verifyToken, async (req, res) => {
 
     // If both confirmed — complete and clean up the chat
     if (updatedChat.ownerConfirmed && updatedChat.finderConfirmed) {
-      // Send system message
-      await db
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .add({
-          senderId: 'system',
-          senderName: 'System',
-          text: '✅ Both parties have confirmed the item has been returned. This chat will now be closed.',
-          createdAt: new Date().toISOString(),
-        });
+  // Send system message
+  await db.collection('chats').doc(chatId).collection('messages').add({
+    senderId: 'system',
+    senderName: 'System',
+    text: '✅ Both parties have confirmed the item has been returned. This chat will now be closed.',
+    createdAt: new Date().toISOString(),
+  });
 
-      // Mark chat as completed
-      await db.collection('chats').doc(chatId).update({
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-      });
+  // Mark chat as completed
+  await db.collection('chats').doc(chatId).update({
+    status: 'completed',
+    completedAt: new Date().toISOString(),
+  });
 
-      // Notify both parties
-      await Promise.all([
-        db.collection('notifications').add({
-          userId: chat.ownerId,
-          type: 'chat_completed',
-          message: 'Item return confirmed by both parties. The chat has been closed.',
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        }),
-        db.collection('notifications').add({
-          userId: chat.finderId,
-          type: 'chat_completed',
-          message: 'Item return confirmed by both parties. Thank you for helping reunite this item!',
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        }),
-      ]);
-
-      await Promise.all([
-        sendPushNotification(chat.ownerId, {
-            title: '✅ Item Return Complete!',
-            body: 'Both parties confirmed. The item has been successfully returned.',
-            type: 'chat_completed',
-            url: '/dashboard',
-        }),
-        sendPushNotification(chat.finderId, {
-            title: '✅ Item Return Complete!',
-            body: 'Thank you for helping reunite this item with its owner!',
-            type: 'chat_completed',
-            url: '/dashboard',
-        }),
-    ]);
-
-      return res.json({ message: 'Both confirmed — chat completed', completed: true });
-    }
-
-    res.json({
-      message: 'Confirmation recorded — waiting for other party',
-      completed: false,
+  // ← ADD THIS — Mark both items as recovered
+  if (chat.lostItemId) {
+    await db.collection('lostItems').doc(chat.lostItemId).update({
+      status: 'recovered',
     });
+  }
+  if (chat.foundItemId) {
+    await db.collection('foundItems').doc(chat.foundItemId).update({
+      status: 'recovered',
+    });
+  }
+
+  // ← ADD THIS — Create a claim record so it shows in admin claims tab
+  const existingClaim = await db
+    .collection('claims')
+    .where('lostItemId', '==', chat.lostItemId)
+    .where('status', '==', 'verified')
+    .get();
+
+  if (existingClaim.empty) {
+    await db.collection('claims').add({
+      matchId: chat.matchId || null,
+      lostItemId: chat.lostItemId,
+      foundItemId: chat.foundItemId,
+      claimantId: chat.ownerId,
+      claimantEmail: '',
+      verificationDetails: 'Item return confirmed by both parties via chat.',
+      status: 'verified',
+      source: 'chat_confirmation',
+      createdAt: new Date().toISOString(),
+      processedAt: new Date().toISOString(),
+    });
+  }
+
+  // ← ADD THIS — Increment finder's recovered count
+  if (chat.finderId) {
+    const finderRef = db.collection('users').doc(chat.finderId);
+    const finderDoc = await finderRef.get();
+    const currentCount = finderDoc.data()?.recoveredCount || 0;
+    await finderRef.update({ recoveredCount: currentCount + 1 });
+  }
+
+  // Notify both parties
+  await Promise.all([
+    db.collection('notifications').add({
+      userId: chat.ownerId,
+      type: 'chat_completed',
+      message: 'Item return confirmed by both parties. The chat has been closed.',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    }),
+    db.collection('notifications').add({
+      userId: chat.finderId,
+      type: 'chat_completed',
+      message: 'Item return confirmed. Thank you for helping reunite this item!',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    }),
+  ]);
+
+  // Push notifications
+  await Promise.all([
+    sendPushNotification(chat.ownerId, {
+      title: '✅ Item Return Complete!',
+      body: 'Both parties confirmed. The item has been successfully returned.',
+      type: 'chat_completed',
+      url: '/dashboard',
+    }),
+    sendPushNotification(chat.finderId, {
+      title: '✅ Item Return Complete!',
+      body: 'Thank you for helping reunite this item with its owner!',
+      type: 'chat_completed',
+      url: '/dashboard',
+    }),
+  ]);
+
+  return res.json({
+    message: 'Both confirmed — chat completed',
+    completed: true,
+  });
+}
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not confirm' });

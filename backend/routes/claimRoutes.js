@@ -3,12 +3,13 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../config/firebase');
 const { verifyToken } = require('../middleware/authMiddleware');
+const sanitize = require('../utils/sanitize'); // add this import
 
 // POST /api/claims — submit a claim for an approved match
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { matchId, lostItemId, foundItemId, verificationDetails } = req.body;
-
+    const { matchId, lostItemId, foundItemId } = req.body;
+const verificationDetails = sanitize(req.body.verificationDetails);
     if (!matchId || !lostItemId || !verificationDetails) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -181,6 +182,25 @@ router.patch('/:claimId', verifyToken, async (req, res) => {
       await db.collection('foundItems').doc(claim.foundItemId).update({
         status: 'recovered',
       });
+
+      const foundItemDoc = await db
+        .collection('foundItems')
+        .doc(claim.foundItemId)
+        .get();
+
+      if (foundItemDoc.exists) {
+        const finderId = foundItemDoc.data()?.userId;
+        if (finderId) {
+          const finderRef = db.collection('users').doc(finderId);
+          const finderDoc = await finderRef.get();
+          const currentCount = finderDoc.data()?.recoveredCount || 0;
+          await finderRef.update({
+            recoveredCount: currentCount + 1,
+          });
+          console.log('Updated recovered count to:', currentCount + 1);
+        }
+      }
+
 
       // Notify the claimant
       await db.collection('notifications').add({

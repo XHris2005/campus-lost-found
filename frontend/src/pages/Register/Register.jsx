@@ -1,30 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase/firebaseConfig';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
 import {
   FiUser, FiMail, FiLock, FiArrowRight,
   FiSearch, FiSun, FiMoon,
 } from 'react-icons/fi';
 import './Register.css';
 
-const ROLES = [
-  { value: 'owner', label: '🔍 I lost an item', desc: 'Report and track your lost belongings' },
-  { value: 'finder', label: '📦 I found an item', desc: 'Report items you have found on campus' },
-];
-
 export default function Register() {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', role: 'owner',
+    name: '', email: '', password: '', confirmPassword: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { currentUser } = useAuth();
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -52,7 +45,7 @@ export default function Register() {
         uid: user.uid,
         displayName: formData.name,
         email: formData.email,
-        role: formData.role,
+        role: 'user', // default role — not owner or finder
         createdAt: new Date().toISOString(),
       });
       navigate('/dashboard', { replace: true });
@@ -61,10 +54,6 @@ export default function Register() {
       setLoading(false);
     }
   }
-  
-  useEffect(() => {
-    if (currentUser) navigate('/dashboard', { replace: true });
-  }, [currentUser]);
 
   return (
     <div className="auth-page">
@@ -149,30 +138,6 @@ export default function Register() {
                   required
                   disabled={loading}
                 />
-              </div>
-            </div>
-
-            {/* Role Selection */}
-            <div className="form-group">
-              <label className="form-label">I am joining as</label>
-              <div className="role-selector">
-                {ROLES.map((role) => (
-                  <label
-                    key={role.value}
-                    className={`role-option ${formData.role === role.value ? 'role-option-active' : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={role.value}
-                      checked={formData.role === role.value}
-                      onChange={handleChange}
-                      hidden
-                    />
-                    <span className="role-label">{role.label}</span>
-                    <span className="role-desc">{role.desc}</span>
-                  </label>
-                ))}
               </div>
             </div>
 

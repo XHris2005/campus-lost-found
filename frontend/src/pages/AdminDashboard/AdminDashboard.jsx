@@ -4,8 +4,8 @@ import { getMatches, updateMatchStatus, getStats, getUsers } from '../../api/adm
 import { getAllClaims, processClaim } from '../../api/claimApi';
 import { getAllChats } from '../../api/chatApi';
 import AdminMatchCard from '../../components/AdminMatchCard/AdminMatchCard';
-import ClaimCard from '../../components/ClaimCard/ClaimCard';
-import { deleteItem } from '../../api/adminApi';
+import ClaimCard from '../../components/ClaimCard/ClaimCard';;
+import { getBadge } from '../../utils/badges';
 import {
   FiSearch, FiPackage, FiClock, FiCheckCircle,
   FiXCircle, FiUsers, FiMessageSquare, FiBarChart2,
@@ -119,32 +119,6 @@ export default function AdminDashboard() {
     }
     setActionLoading(false);
   }
-
-  async function handleDelete(collection, itemId) {
-  if (!window.confirm('Are you sure you want to permanently delete this record?')) return;
-  setActionLoading(true);
-  try {
-    await deleteItem(collection, itemId);
-    setSuccessMsg('Record deleted successfully.');
-
-    // Remove from local state
-    if (collection === 'lostItems' || collection === 'foundItems') {
-      setMatches(prev => prev.filter(m =>
-        m.lostItemId !== itemId && m.foundItemId !== itemId
-      ));
-    }
-    if (collection === 'matches') {
-      setMatches(prev => prev.filter(m => m.id !== itemId));
-    }
-    if (collection === 'claims') {
-      setClaims(prev => prev.filter(c => c.id !== itemId));
-    }
-    setTimeout(() => setSuccessMsg(''), 3000);
-  } catch (err) {
-    setError('Could not delete record.');
-  }
-  setActionLoading(false);
-}
 
   const pendingMatches = matches.filter(m => m.status === 'pending');
   const reviewedMatches = matches.filter(m => m.status !== 'pending');
@@ -274,7 +248,6 @@ export default function AdminDashboard() {
                     match={match}
                     onApprove={handleApprove}
                     onReject={handleReject}
-                    onDelete={() => handleDelete('matches', match.id)}
                     loading={actionLoading}
                   />
                 ))
@@ -298,7 +271,6 @@ export default function AdminDashboard() {
                     match={match}
                     onApprove={handleApprove}
                     onReject={handleReject}
-                    onDelete={() => handleDelete('matches', match.id)}
                     loading={actionLoading}
                   />
                 ))
@@ -322,7 +294,6 @@ export default function AdminDashboard() {
                     claim={claim}
                     onVerify={handleVerifyClaim}
                     onReject={handleRejectClaim}
-                    onDelete={() => handleDelete('claims', claim.id)}
                     loading={actionLoading}
                   />
                 ))
@@ -403,7 +374,7 @@ export default function AdminDashboard() {
                   <table className="admin-table">
                     <thead>
                       <tr>
-                        {['Name', 'Email', 'Role', 'Joined'].map(h => (
+                        {['Name', 'Email', 'Badge', 'Role', 'Joined'].map(h => (
                           <th key={h} className="admin-th">{h}</th>
                         ))}
                       </tr>
@@ -427,6 +398,23 @@ export default function AdminDashboard() {
                             }`}>
                               {user.role}
                             </span>
+                          </td>
+                          <td className="admin-td">
+                            {(() => {
+                              const badge = getBadge(user.recoveredCount || 0);
+                              return (
+                                <span style={{
+                                  fontSize: '0.78rem',
+                                  fontWeight: '700',
+                                  color: badge.color,
+                                  backgroundColor: badge.bg,
+                                  padding: '0.2rem 0.6rem',
+                                  borderRadius: '999px',
+                                  }}>
+                                    {badge.icon} {badge.label}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="admin-td admin-td-muted">
                             {new Date(user.createdAt).toLocaleDateString()}

@@ -84,6 +84,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.sidebar-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+  margin-top: 0.2rem;
+  display: inline-block;
+}
 
 .sidebar-role-badge {
   font-size: 0.7rem;
@@ -91,6 +99,10 @@
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-full);
   text-transform: capitalize;
+}
+.sidebar-role-user {
+  background: var(--info-bg);
+  color: var(--info);
 }
 
 .sidebar-role-owner {

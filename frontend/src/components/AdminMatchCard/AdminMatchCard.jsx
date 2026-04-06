@@ -1,7 +1,7 @@
 import { FiPackage } from 'react-icons/fi';
 import './AdminMatchCard.css';
 
-export default function AdminMatchCard({ match, onApprove, onReject, onDelete, loading }) {
+export default function AdminMatchCard({ match, onApprove, onReject, loading }) {
   const { lostItem, foundItem, combinedScore, status } = match;
   const scorePercent = Math.round((combinedScore || 0) * 100);
 
@@ -87,15 +87,6 @@ export default function AdminMatchCard({ match, onApprove, onReject, onDelete, l
             </button>
           </>
         )}
-        {/* Delete button — always visible to admin */}
-        <button
-          className="btn btn-ghost btn-sm delete-btn"
-          onClick={onDelete}
-          disabled={loading}
-          title="Permanently delete this record"
-        >
-          🗑️ Delete
-        </button>
       </div>
     </div>
   );

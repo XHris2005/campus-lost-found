@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const itemRoutes = require('./routes/itemRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const claimRoutes = require('./routes/claimRoutes');
@@ -8,15 +10,33 @@ const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+// Security headers
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests, slow down.' }
+});
+app.use('/api/', limiter);
+
+// CORS
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://your-app.vercel.app', // replace with your actual Vercel URL
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 app.use(express.json());
 
 // Routes
 app.use('/api/items', itemRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/chats', chatRoutes);
-
-// Add this line after the existing app.use('/api/items', itemRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check
@@ -28,5 +48,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-

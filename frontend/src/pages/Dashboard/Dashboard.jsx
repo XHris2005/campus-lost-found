@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getLostItems, getFoundItems } from '../../api/itemApi';
 import usePushNotifications from '../../hooks/usePushNotifications';
+import UserBadge from '../../components/UserBadge/UserBadge';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase/firebaseConfig';
 import {
   FiSearch, FiPackage, FiAlertCircle,
   FiBell, FiPlus, FiCheckCircle,
@@ -16,17 +19,20 @@ export default function Dashboard() {
   const [myLostItems, setMyLostItems] = useState([]);
   const [myFoundItems, setMyFoundItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recoveredCount, setRecoveredCount] = useState(0);
   usePushNotifications();
 
   useEffect(() => {
     async function fetchMyItems() {
       try {
-        const [lost, found] = await Promise.all([
+        const [lost, found, userDoc] = await Promise.all([
           getLostItems(),
           getFoundItems(),
+          getDoc(doc(db, 'users', currentUser?.uid)),
         ]);
         setMyLostItems(lost.filter(i => i.userId === currentUser?.uid));
         setMyFoundItems(found.filter(i => i.userId === currentUser?.uid));
+        setRecoveredCount(userDoc.data()?.recoveredCount || 0);
       } catch (err) {
         console.error(err);
       }
@@ -197,7 +203,12 @@ export default function Dashboard() {
           <span className={`badge badge-info profile-role`}>
             {userRole}
           </span>
-
+          <UserBadge
+            recoveredCount={recoveredCount}
+            showProgress={true}
+            size="md"
+          />
+          
           <div className="profile-stats">
             <div className="profile-stat">
               <span className="profile-stat-value">{myLostItems.length}</span>

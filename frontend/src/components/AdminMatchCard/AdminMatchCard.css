@@ -124,16 +124,6 @@
   padding-top: 1rem;
   border-top: 1px solid var(--border);
 }
-.delete-btn {
-  margin-left: auto;
-  color: var(--error);
-  border-color: var(--error);
-}
-
-.delete-btn:hover {
-  background: var(--error-bg);
-  color: var(--error);
-}
 
 @media (max-width: 600px) {
   .match-comparison {

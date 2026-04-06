@@ -6,6 +6,7 @@ const multer = require('multer');
 const cloudinary = require('../config/cloudinary');
 const { db } = require('../config/firebase');
 const { verifyToken } = require('../middleware/authMiddleware');
+const sanitize = require('../utils/sanitize'); // add this import
 
 // Store image in memory before uploading to Cloudinary
 const storage = multer.memoryStorage();
@@ -37,7 +38,11 @@ function uploadToCloudinary(buffer, folder) {
 // POST /api/items/lost — report a lost item
 router.post('/lost', verifyToken, upload.single('image'), async (req, res) => {
   try {
-    const { name, description, category, location, dateLost } = req.body;
+    const name = sanitize(req.body.name);
+const description = sanitize(req.body.description);
+const category = sanitize(req.body.category);
+const location = sanitize(req.body.location);
+const dateLost = sanitize(req.body.dateLost);
 
     if (!name || !description || !category || !location || !dateLost) {
       return res.status(400).json({ error: 'All fields are required' });
@@ -82,7 +87,11 @@ router.post('/lost', verifyToken, upload.single('image'), async (req, res) => {
 // POST /api/items/found — report a found item
 router.post('/found', verifyToken, upload.single('image'), async (req, res) => {
   try {
-    const { name, description, category, location, dateFound } = req.body;
+    const name = sanitize(req.body.name);
+const description = sanitize(req.body.description);
+const category = sanitize(req.body.category);
+const location = sanitize(req.body.location);
+const dateFound = sanitize(req.body.dateFound);
 
     if (!name || !description || !category || !location || !dateFound) {
       return res.status(400).json({ error: 'All fields are required' });

@@ -2,6 +2,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { useAuth } from '../../context/AuthContext';
+import { getBadge } from '../../utils/badges';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase/firebaseConfig';
+import { useState, useEffect } from 'react';
 import {
   FiSearch, FiHome, FiPlusCircle, FiList,
   FiMessageSquare, FiShield, FiLogOut,
@@ -13,6 +17,22 @@ export default function Sidebar({ isOpen, onClose }) {
   const { currentUser, userRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [recoveredCount, setRecoveredCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchCount() {
+      if (!currentUser) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        setRecoveredCount(userDoc.data()?.recoveredCount || 0);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchCount();
+  }, [currentUser]);
+
+  const badge = getBadge(recoveredCount);
 
   async function handleLogout() {
     await signOut(auth);
@@ -70,8 +90,19 @@ export default function Sidebar({ isOpen, onClose }) {
           <p className="sidebar-user-name">
             {currentUser?.displayName}
           </p>
-          <span className={`sidebar-role-badge sidebar-role-${userRole}`}>
-            {userRole}
+          <span className={`sidebar-role-badge ${
+            userRole === 'admin' ? 'sidebar-role-admin' : 'sidebar-role-user'
+          }`}>
+              {userRole === 'admin' ? 'Admin' : 'User'}
+          </span>
+          <span
+            className="sidebar-badge"
+            style={{
+              color: badge.color,
+              backgroundColor: badge.bg,
+            }}
+          >
+            {badge.icon} {badge.label}
           </span>
         </div>
       </div>
