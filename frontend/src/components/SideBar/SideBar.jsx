@@ -11,7 +11,7 @@ import {
   FiMessageSquare, FiShield, FiLogOut,
   FiPackage,
 } from 'react-icons/fi';
-import './Sidebar.css';
+import './SideBar.css';
 
 export default function Sidebar({ isOpen, onClose }) {
   const { currentUser, userRole } = useAuth();
