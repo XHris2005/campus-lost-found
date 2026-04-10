@@ -25,7 +25,7 @@ app.use('/api/', limiter);
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://campus-lost-found-sigma.vercel.app/', // replace with your actual Vercel URL
+    'https://campus-lost-found-sigma.vercel.app', // replace with your actual Vercel URL
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
