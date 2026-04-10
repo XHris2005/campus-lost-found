@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cron = require('node-cron');
+const https = require('https');
 const itemRoutes = require('./routes/itemRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const claimRoutes = require('./routes/claimRoutes');
@@ -25,7 +27,7 @@ app.use('/api/', limiter);
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://campus-lost-found-sigma.vercel.app', // replace with your actual Vercel URL
+    'https://campus-lost-found-sigma.vercel.app',
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -42,6 +44,15 @@ app.use('/api/admin', adminRoutes);
 // Health check
 app.get('/', (req, res) => {
   res.json({ message: 'Campus Lost & Found API is running' });
+});
+
+// Keep-alive ping every 10 minutes to prevent Render cold starts
+cron.schedule('*/10 * * * *', () => {
+  https.get('https://campus-lost-found-backend-qcw5.onrender.com', (res) => {
+    console.log(`Keep-alive ping: ${res.statusCode}`);
+  }).on('error', (err) => {
+    console.error('Keep-alive ping failed:', err.message);
+  });
 });
 
 const PORT = process.env.PORT || 5000;
