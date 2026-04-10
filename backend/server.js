@@ -18,10 +18,18 @@ app.use(helmet());
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500, // increase from 100 to 500
   message: { error: 'Too many requests, slow down.' }
 });
 app.use('/api/', limiter);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many attempts, slow down.' }
+});
+
+app.use('/api/auth', authLimiter);
 
 // CORS
 app.use(cors({
