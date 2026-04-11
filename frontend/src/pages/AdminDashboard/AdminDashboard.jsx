@@ -121,7 +121,10 @@ export default function AdminDashboard() {
   }
 
   const pendingMatches = matches.filter(m => m.status === 'pending');
-  const reviewedMatches = matches.filter(m => m.status !== 'pending');
+  const claimedLostItemIds = new Set(claims.map(c => c.lostItemId));
+  const reviewedMatches = matches.filter(m =>
+    m.status !== 'pending' && !claimedLostItemIds.has(m.lostItemId)
+  );
 
   const statCards = stats ? [
     {
