@@ -11,6 +11,7 @@ import {
   FiMessageSquare, FiShield, FiLogOut,
   FiPackage,
 } from 'react-icons/fi';
+import Logo from '../Logo/Logo';
 import './SideBar.css';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -75,11 +76,9 @@ export default function Sidebar({ isOpen, onClose }) {
     <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
       {/* Brand */}
       <div className="sidebar-brand" onClick={() => navigate('/')}>
-        <div className="sidebar-brand-icon">
-          <FiSearch size={20} />
-        </div>
-        <span className="sidebar-brand-name">CampusFind</span>
-      </div>
+  <Logo size={28} />
+  <span className="sidebar-brand-name">Recova</span>
+</div>
 
       {/* User Info */}
       <div className="sidebar-user">

@@ -7,6 +7,7 @@ import {
   FiMoon, FiArrowRight, FiCheckCircle, FiMapPin,
   FiClock, FiStar,
 } from 'react-icons/fi';
+import Logo from '../../components/Logo/Logo';
 import './Home.css';
 
 export default function Home() {
@@ -72,22 +73,25 @@ export default function Home() {
     <div className="home">
       {/* Navbar */}
       <nav className="home-nav">
-        <div className="home-nav-brand">
-          <FiSearch className="brand-icon" />
-          <span>CampusFind</span>
-        </div>
-        <div className="home-nav-actions">
-          <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
-            {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
-          </button>
-          <button className="btn btn-ghost" onClick={() => navigate('/login')}>
-            Login
-          </button>
-          <button className="btn btn-primary" onClick={() => navigate('/register')}>
-            Get Started <FiArrowRight size={16} />
-          </button>
-        </div>
-      </nav>
+  <div className="home-nav-brand">
+    <Logo size={28} />
+    <span>Recova</span>
+  </div>
+  <div className="home-nav-actions">
+    <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
+      {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
+    </button>
+    <button
+      className="btn btn-ghost home-nav-login"
+      onClick={() => navigate('/login')}
+    >
+      Login
+    </button>
+    <button className="btn btn-primary" onClick={() => navigate('/register')}>
+      Get Started
+    </button>
+  </div>
+</nav>
 
       {/* Hero Section */}
       <section className="hero">
@@ -101,7 +105,7 @@ export default function Home() {
             <span className="hero-highlight"> Campus?</span>
           </h1>
           <p className="hero-subtitle">
-            CampusFind uses artificial intelligence to automatically match
+            Recova uses artificial intelligence to automatically match
             lost and found items at the University of Calabar — making
             recovery faster, smarter, and more reliable than ever before.
           </p>
@@ -224,7 +228,7 @@ export default function Home() {
         <div className="section-container">
           <div className="section-header">
             <div className="section-badge">Features</div>
-            <h2>Why CampusFind?</h2>
+            <h2>Why Recova?</h2>
             <p>Built specifically for the University of Calabar community</p>
           </div>
           <div className="features-grid">
@@ -246,7 +250,7 @@ export default function Home() {
             <FiSearch size={32} />
           </div>
           <h2>Ready to Find Your Lost Item?</h2>
-          <p>Join the University of Calabar community on CampusFind today.</p>
+          <p>Join the University of Calabar community on Recova today.</p>
           <button
             className="btn btn-primary btn-lg"
             onClick={() => navigate(currentUser ? '/dashboard' : '/register')}
@@ -262,9 +266,9 @@ export default function Home() {
         <div className="footer-content">
           <div className="footer-brand">
             <FiSearch size={16} />
-            <span>CampusFind</span>
+            <span>Recova</span>
           </div>
-          <p>© 2026 CampusFind · University of Calabar · AI-Powered Lost & Found</p>
+          <p>© 2026 Recova · University of Calabar · AI-Powered Lost & Found</p>
         </div>
       </footer>
     </div>

@@ -8,6 +8,7 @@ import {
   FiUser, FiMail, FiLock, FiArrowRight,
   FiSearch, FiSun, FiMoon,
 } from 'react-icons/fi';
+import Logo from '../../components/Logo/Logo';
 import './Register.css';
 
 export default function Register() {
@@ -61,11 +62,9 @@ export default function Register() {
       <div className="auth-left">
         <div className="auth-left-content">
           <div className="auth-brand" onClick={() => navigate('/')}>
-            <div className="auth-brand-icon">
-              <FiSearch size={22} />
-            </div>
-            <span>CampusFind</span>
-          </div>
+  <Logo size={30} />
+  <span>Recova</span>
+</div>
           <div className="auth-left-text">
             <h1>Join the Community</h1>
             <p>
@@ -97,7 +96,7 @@ export default function Register() {
         <div className="auth-form-wrap">
           <div className="auth-form-header">
             <h2>Create account</h2>
-            <p>Get started with CampusFind today</p>
+            <p>Get started with Recova today</p>
           </div>
 
           {error && (

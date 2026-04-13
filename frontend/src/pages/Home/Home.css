@@ -509,3 +509,8 @@
   .hero-actions { flex-direction: column; }
   .hero-actions .btn { width: 100%; }
 }
+@media (max-width: 400px) {
+  .home-nav-login {
+    display: none;
+  }
+}

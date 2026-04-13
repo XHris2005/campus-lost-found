@@ -8,6 +8,7 @@ import { FiSun, FiMoon } from 'react-icons/fi';
 import './Login.css';
 import { useAuth } from '../../context/AuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import Logo from '../../components/Logo/Logo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -60,11 +61,9 @@ export default function Login() {
       <div className="auth-left">
         <div className="auth-left-content">
           <div className="auth-brand" onClick={() => navigate('/')}>
-            <div className="auth-brand-icon">
-              <FiSearch size={22} />
-            </div>
-            <span>CampusFind</span>
-          </div>
+  <Logo size={30} />
+  <span>Recova</span>
+</div>
           <div className="auth-left-text">
             <h1>Find What Matters</h1>
             <p>
@@ -96,7 +95,7 @@ export default function Login() {
         <div className="auth-form-wrap">
           <div className="auth-form-header">
             <h2>Welcome back</h2>
-            <p>Sign in to your CampusFind account</p>
+            <p>Sign in to your Recova account</p>
           </div>
 
           {error && (
