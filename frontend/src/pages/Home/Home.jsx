@@ -73,23 +73,22 @@ export default function Home() {
     <div className="home">
       {/* Navbar */}
       <nav className="home-nav">
-  <div className="home-nav-brand">
-    <Logo size={28} />
-    <span>Recova</span>
-  </div>
-  <div className="home-nav-actions">
-    <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
-      {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
-    </button>
-    <button
-      className="btn btn-ghost home-nav-login"
-      onClick={() => navigate('/login')}
-    >
-      Login
-    </button>
-    <button className="btn btn-primary" onClick={() => navigate('/register')}>
-      Get Started
-    </button>
+  <div className="home-nav-inner">
+    <div className="home-nav-brand">
+      <Logo size={26} />
+      <span>Recova</span>
+    </div>
+    <div className="home-nav-actions">
+      <button className="theme-toggle" onClick={toggleTheme}>
+        {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
+      </button>
+      <button className="btn btn-ghost home-nav-login" onClick={() => navigate('/login')}>
+        Login
+      </button>
+      <button className="btn btn-primary" onClick={() => navigate('/register')}>
+        Get Started
+      </button>
+    </div>
   </div>
 </nav>
 
