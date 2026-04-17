@@ -61,11 +61,11 @@
    ============================================ */
 
 [data-theme='dark'] {
-  --primary: #10b981;
-  --primary-light: #34d399;
-  --primary-hover: #059669;
-  --accent: #10b981;
-  --accent-hover: #059669;
+  --primary: #4F7DF3;
+  --primary-light: #7B9FF5;
+  --primary-hover: #3D6AE0;
+  --accent: #4F7DF3;
+  --accent-hover: #3D6AE0;
 
   --bg-primary: #0a0f1e;
   --bg-secondary: #0f172a;
@@ -79,7 +79,7 @@
   --text-inverse: #0a0f1e;
 
   --border: #1e3a5f;
-  --border-focus: #10b981;
+  --border-focus: #4F7DF3;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
