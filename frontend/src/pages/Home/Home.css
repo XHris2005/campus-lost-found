@@ -450,7 +450,7 @@
 }
 
 [data-theme='dark'] .cta {
-  background: linear-gradient(135deg, #064e3b, #065f46);
+  background: linear-gradient(135deg, #274694, #3D6AE0);
 }
 
 .cta-icon {
@@ -481,7 +481,7 @@
 
 .cta .btn-primary:hover {
   background: rgba(255, 255, 255, 0.92);
-  color: #1d4ed8;
+  color: #fff;
   transform: translateY(-2px);
 }
 
