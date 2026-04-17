@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getLostItems, getFoundItems } from '../../api/itemApi';
 import { getMatchForLostItem } from '../../api/claimApi';
 import ItemCard from '../../components/ItemCard/ItemCard';
+import { useAuth } from '../../context/AuthContext';
 import {
   FiSearch, FiFilter, FiList, FiPackage,
   FiX, FiSliders,
@@ -23,6 +24,7 @@ export default function Listings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -206,10 +208,12 @@ export default function Listings() {
               key={item.id}
               item={item}
               type={activeTab}
-              onClaim={activeTab === 'lost' && item.status === 'matched'
-                ? handleClaim
-                : null
-              }
+              onClaim={activeTab === 'lost' 
+  && item.status === 'matched'
+  && item.userId === currentUser?.uid
+  ? handleClaim
+  : null
+}
             />
           ))}
         </div>
