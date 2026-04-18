@@ -6,6 +6,9 @@ import usePushNotifications from '../../hooks/usePushNotifications';
 import UserBadge from '../../components/UserBadge/UserBadge';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
+import { deleteMyAccount } from '../../api/userApi';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase/firebaseConfig';
 import {
   FiSearch, FiPackage, FiAlertCircle,
   FiBell, FiPlus, FiCheckCircle,
@@ -20,6 +23,8 @@ export default function Dashboard() {
   const [myFoundItems, setMyFoundItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recoveredCount, setRecoveredCount] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+const [deleteLoading, setDeleteLoading] = useState(false);
   usePushNotifications();
 
   useEffect(() => {
@@ -57,6 +62,18 @@ export default function Dashboard() {
     if (hours < 24) return `${hours}h ago`;
     return `${days}d ago`;
   }
+
+  async function handleDeleteAccount() {
+  setDeleteLoading(true);
+  try {
+    await deleteMyAccount();
+    await signOut(auth);
+    navigate('/');
+  } catch (err) {
+    console.error(err);
+    setDeleteLoading(false);
+  }
+}
 
   const stats = [
     {
@@ -245,6 +262,36 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          <div className="delete-account-section">
+  {!showDeleteConfirm ? (
+    <button
+      className="btn btn-ghost btn-sm delete-account-btn"
+      onClick={() => setShowDeleteConfirm(true)}
+    >
+      Delete Account
+    </button>
+  ) : (
+    <div className="delete-confirm-box">
+      <p>Are you sure? This cannot be undone.</p>
+      <div className="delete-confirm-actions">
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => setShowDeleteConfirm(false)}
+          disabled={deleteLoading}
+        >
+          Cancel
+        </button>
+        <button
+          className="btn btn-danger btn-sm"
+          onClick={handleDeleteAccount}
+          disabled={deleteLoading}
+        >
+          {deleteLoading ? 'Deleting...' : 'Yes, Delete'}
+        </button>
+      </div>
+    </div>
+  )}
+</div>
         </div>
       </div>
     </div>

@@ -9,8 +9,12 @@ const itemRoutes = require('./routes/itemRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const claimRoutes = require('./routes/claimRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
+
+// ...
+app.use('/api/users', userRoutes);
 
 // Security headers
 app.use(helmet());
