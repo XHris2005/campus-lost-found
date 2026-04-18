@@ -43,12 +43,13 @@ export default function Register() {
       );
       await updateProfile(user, { displayName: formData.name });
       await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        displayName: formData.name,
-        email: formData.email,
-        role: 'user', // default role — not owner or finder
-        createdAt: new Date().toISOString(),
-      });
+  uid: user.uid,
+  displayName: formData.name,
+  email: formData.email,
+  role: 'user',
+  recoveredCount: 0,
+  createdAt: new Date().toISOString(),
+});
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.message.replace('Firebase: ', ''));

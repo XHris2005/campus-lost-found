@@ -16,7 +16,7 @@
 }
 
 [data-theme='dark'] .auth-left {
-  background: linear-gradient(145deg, #064e3b, #065f46);
+  background: linear-gradient(145deg, #274694, #3D6AE0);
 }
 
 .auth-left::before {
