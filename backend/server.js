@@ -14,29 +14,10 @@ const userRoutes = require('./routes/userRoutes');
 const app = express();
 app.set('trust proxy', 1);
 
-// ...
-app.use('/api/users', userRoutes);
-
 // Security headers
 app.use(helmet());
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500, // increase from 100 to 500
-  message: { error: 'Too many requests, slow down.' }
-});
-app.use('/api/', limiter);
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { error: 'Too many attempts, slow down.' }
-});
-
-app.use('/api/auth', authLimiter);
-
-// CORS
+// CORS — must be before routes
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -46,13 +27,30 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// Body parsing — must be before routes
 app.use(express.json());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  message: { error: 'Too many requests, slow down.' }
+});
+app.use('/api/', limiter);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many attempts, slow down.' }
+});
+app.use('/api/auth', authLimiter);
 
 // Routes
 app.use('/api/items', itemRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/', (req, res) => {
