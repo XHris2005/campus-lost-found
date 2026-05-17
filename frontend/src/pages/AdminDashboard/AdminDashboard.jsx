@@ -8,21 +8,15 @@ import ClaimCard from '../../components/ClaimCard/ClaimCard';;
 import { getBadge } from '../../utils/badges';
 import {
   FiSearch, FiPackage, FiClock, FiCheckCircle,
-  FiXCircle, FiUsers, FiMessageSquare, FiBarChart2,
+  FiXCircle, FiUsers, FiMessageSquare,
 } from 'react-icons/fi';
+import { useSearchParams } from 'react-router-dom';
 import './AdminDashboard.css';
-
-const TABS = [
-  { key: 'matches', label: 'Pending Matches', icon: <FiSearch size={16} /> },
-  { key: 'reviewed', label: 'Reviewed', icon: <FiCheckCircle size={16} /> },
-  { key: 'claims', label: 'Claims', icon: <FiPackage size={16} /> },
-  { key: 'chats', label: 'Chats', icon: <FiMessageSquare size={16} /> },
-  { key: 'users', label: 'Users', icon: <FiUsers size={16} /> },
-];
 
 export default function AdminDashboard() {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('matches');
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'matches';
   const [matches, setMatches] = useState([]);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -165,14 +159,6 @@ export default function AdminDashboard() {
     },
   ] : [];
 
-  function getTabCount(key) {
-    if (key === 'matches') return pendingMatches.length;
-    if (key === 'reviewed') return reviewedMatches.length;
-    if (key === 'claims') return claims.length;
-    if (key === 'chats') return adminChats.length;
-    if (key === 'users') return users.length;
-    return 0;
-  }
 
   return (
     <div className="admin-page">
@@ -211,21 +197,6 @@ export default function AdminDashboard() {
       {error && (
         <div className="alert alert-error">{error}</div>
       )}
-
-      {/* Tabs */}
-      <div className="admin-tabs">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            className={`admin-tab ${activeTab === tab.key ? 'admin-tab-active' : ''}`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.icon}
-            {tab.label}
-            <span className="admin-tab-count">{getTabCount(tab.key)}</span>
-          </button>
-        ))}
-      </div>
 
       {/* Tab Content */}
       {loading ? (

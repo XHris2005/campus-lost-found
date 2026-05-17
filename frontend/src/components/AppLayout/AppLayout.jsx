@@ -3,7 +3,7 @@ import Sidebar from '../SideBar/SideBar';
 import TopBar from '../TopBar/TopBar';
 import './AppLayout.css';
 
-export default function AppLayout({ children }) {
+export default function AppLayout({ children, tabCounts = {} }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (

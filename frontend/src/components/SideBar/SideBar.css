@@ -231,6 +231,17 @@
 .sidebar-logout:hover {
   background: var(--error-bg);
 }
+.sidebar-tab-count {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
+}
 
 /* Mobile */
 @media (max-width: 768px) {

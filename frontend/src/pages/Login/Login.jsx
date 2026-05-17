@@ -9,9 +9,11 @@ import './Login.css';
 import { useAuth } from '../../context/AuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import Logo from '../../components/Logo/Logo';
+import { signInWithGoogle } from '../../api/authApi';
 
 export default function Login() {
   const [email, setEmail] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,6 +39,18 @@ export default function Login() {
       setLoading(false);
     }
   }
+
+  async function handleGoogleSignIn() {
+  setGoogleLoading(true);
+  setError('');
+  try {
+    await signInWithGoogle();
+    navigate('/dashboard', { replace: true });
+  } catch (err) {
+    setError('Google sign-in failed. Please try again.');
+  }
+  setGoogleLoading(false);
+}
 
   async function handlePasswordReset(e) {
     e.preventDefault();
@@ -201,6 +215,24 @@ export default function Login() {
                   )}
               </div>
             )}
+            <div className="auth-divider">
+  <span>or</span>
+</div>
+
+<button
+  type="button"
+  className="btn btn-google"
+  onClick={handleGoogleSignIn}
+  disabled={googleLoading}
+>
+  <svg width="18" height="18" viewBox="0 0 48 48">
+    <path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.5 3.1 29.6 1 24 1 14.9 1 7.1 6.7 3.9 14.7l7 5.4C12.5 13.7 17.8 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.2-4.5 6.8l7 5.4c4.1-3.8 6.5-9.4 6.5-16.2z"/>
+    <path fill="#FBBC05" d="M10.9 28.6A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6l-7-5.4A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6.1z"/>
+    <path fill="#34A853" d="M24 47c5.6 0 10.3-1.9 13.7-5l-7-5.4c-1.9 1.3-4.3 2-6.7 2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6.1C7.1 41.3 14.9 47 24 47z"/>
+  </svg>
+  {googleLoading ? 'Signing in...' : 'Continue with Google'}
+</button>
           <p className="auth-switch">
             Don't have an account?{' '}
             <Link to="/register">Create one here</Link>
