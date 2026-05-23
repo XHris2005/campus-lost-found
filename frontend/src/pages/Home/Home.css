@@ -521,6 +521,21 @@
   font-size: 0.82rem;
   color: var(--text-muted);
 }
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footer-link {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.footer-link:hover {
+  color: var(--accent);
+}
 
 /* ============================================
    RESPONSIVE

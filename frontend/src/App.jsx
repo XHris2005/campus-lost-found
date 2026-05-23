@@ -15,6 +15,7 @@ import Chat from './pages/Chat/Chat';
 import MyChats from './pages/MyChats/MyChats';
 import AppLayout from './components/AppLayout/AppLayout';
 import NotFound from './pages/NotFound/NotFound';
+import Privacy from './pages/Privacy/Privacy';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <AppLayout> <Dashboard /> </AppLayout>

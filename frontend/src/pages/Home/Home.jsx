@@ -261,15 +261,20 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="home-footer">
-        <div className="footer-content">
-          <div className="footer-brand">
-            <FiSearch size={16} />
-            <span>Recova</span>
-          </div>
-          <p>© 2026 Recova · University of Calabar · AI-Powered Lost & Found</p>
-        </div>
-      </footer>
+<footer className="home-footer">
+  <div className="footer-content">
+    <div className="footer-brand">
+      <Logo size={18} />
+      <span>Recova</span>
+    </div>
+    <p>© 2026 Recova · University of Calabar · AI-Powered Lost & Found</p>
+    <div className="footer-links">
+      <span onClick={() => navigate('/privacy')} className="footer-link">
+        Privacy Policy
+      </span>
+    </div>
+  </div>
+</footer>
     </div>
   );
 }
