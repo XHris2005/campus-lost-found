@@ -269,9 +269,9 @@ export default function Home() {
     </div>
     <p>© 2026 Recova · University of Calabar · AI-Powered Lost & Found</p>
     <div className="footer-links">
-      <span onClick={() => navigate('/privacy')} className="footer-link">
-        Privacy Policy
-      </span>
+      <a href="/privacy" className="footer-link">
+  Privacy Policy
+</a>
     </div>
   </div>
 </footer>
