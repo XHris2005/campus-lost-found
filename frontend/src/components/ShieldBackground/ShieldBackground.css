@@ -1,0 +1,42 @@
+.shield-bg {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  opacity: 0.06;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.shield-bg svg {
+  width: 100%;
+  height: 100%;
+}
+
+.shield-bg-right {
+  right: -100px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.shield-bg-left {
+  left: -100px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.shield-bg-top-right {
+  right: -80px;
+  top: -80px;
+}
+
+.shield-bg-bottom-left {
+  left: -80px;
+  bottom: -80px;
+}
+
+.shield-bg-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}

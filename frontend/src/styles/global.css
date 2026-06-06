@@ -59,7 +59,7 @@ a:hover { color: var(--accent-hover); }
 
 .btn-primary {
   background-color: var(--accent);
-  color: #fff;
+  color: var(--text-inverse);
 }
 .btn-primary:hover:not(:disabled) {
   background-color: var(--accent-hover);
@@ -135,17 +135,18 @@ a:hover { color: var(--accent-hover); }
   width: 100%;
 }
 
+/* replace */
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(26, 42, 74, 0.1);
 }
 
 [data-theme='dark'] .form-input:focus,
 [data-theme='dark'] .form-select:focus,
 [data-theme='dark'] .form-textarea:focus {
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 0 3px rgba(232, 237, 247, 0.1);
 }
 
 .form-input::placeholder,
@@ -187,7 +188,12 @@ a:hover { color: var(--accent-hover); }
 .badge-error { background-color: var(--error-bg); color: var(--error); }
 .badge-info { background-color: var(--info-bg); color: var(--info); }
 .badge-primary {
-  background-color: rgba(37, 99, 235, 0.1);
+  background-color: rgba(26, 42, 74, 0.1);
+  color: var(--accent);
+}
+
+[data-theme='dark'] .badge-primary {
+  background-color: rgba(232, 237, 247, 0.1);
   color: var(--accent);
 }
 
@@ -283,6 +289,25 @@ a:hover { color: var(--accent-hover); }
 .empty-state-icon { font-size: 3.5rem; opacity: 0.4; }
 .empty-state h3 { color: var(--text-secondary); font-size: 1.1rem; }
 .empty-state p { color: var(--text-muted); font-size: 0.9rem; max-width: 300px; }
+
+/* ============================================
+   UNICAL ID CARD DIAGONAL PATTERN
+   ============================================ */
+
+/* ============================================
+   UNICAL ID CARD DIAGONAL PATTERN
+   ============================================ */
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
 
 /* ============================================
    SCROLLBAR

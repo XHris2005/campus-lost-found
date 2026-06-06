@@ -4,6 +4,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase/firebaseConfig';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { verifyMatricNo } from '../../api/userApi';
 import {
   FiUser, FiMail, FiLock, FiArrowRight,
   FiSearch, FiSun, FiMoon,
@@ -14,8 +15,11 @@ import './Register.css';
 
 export default function Register() {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '',
-  });
+  matricNo: '', password: '', confirmPassword: '',
+});
+const [studentData, setStudentData] = useState(null);
+const [matricVerified, setMatricVerified] = useState(false);
+const [matricLoading, setMatricLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,38 +30,53 @@ export default function Register() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (loading) return;
-    setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
-    }
-    if (formData.password.length < 6) {
-      return setError('Password must be at least 6 characters');
-    }
-
-    setLoading(true);
-    try {
-      const { user } = await createUserWithEmailAndPassword(
-        auth, formData.email, formData.password
-      );
-      await updateProfile(user, { displayName: formData.name });
-      await setDoc(doc(db, 'users', user.uid), {
-  uid: user.uid,
-  displayName: formData.name,
-  email: formData.email,
-  role: 'user',
-  recoveredCount: 0,
-  createdAt: new Date().toISOString(),
-});
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      setError(err.message.replace('Firebase: ', ''));
-      setLoading(false);
-    }
+  async function handleVerifyMatric() {
+  if (!formData.matricNo.trim()) return;
+  setMatricLoading(true);
+  setError('');
+  try {
+    const { student } = await verifyMatricNo(formData.matricNo);
+    setStudentData(student);
+    setMatricVerified(true);
+  } catch (err) {
+    setError('Matric number not found. Please check and try again.');
   }
+  setMatricLoading(false);
+}
+
+  async function handleSubmit(e) {
+  e.preventDefault();
+  if (loading || !matricVerified) return;
+  setError('');
+
+  if (formData.password !== formData.confirmPassword) {
+    return setError('Passwords do not match');
+  }
+  if (formData.password.length < 6) {
+    return setError('Password must be at least 6 characters');
+  }
+
+  setLoading(true);
+  try {
+    const email = `${formData.matricNo.replace(/\//g, '')}@recova.unical.edu.ng`;
+    const { user } = await createUserWithEmailAndPassword(auth, email, formData.password);
+    await updateProfile(user, { displayName: studentData.name });
+    await setDoc(doc(db, 'users', user.uid), {
+      uid: user.uid,
+      displayName: studentData.name,
+      email: email,
+      matricNo: formData.matricNo,
+      department: studentData.department,
+      role: 'user',
+      recoveredCount: 0,
+      createdAt: new Date().toISOString(),
+    });
+    navigate('/dashboard', { replace: true });
+  } catch (err) {
+    setError(err.message.replace('Firebase: ', ''));
+    setLoading(false);
+  }
+}
 
   async function handleGoogleSignIn() {
   setGoogleLoading(true);
@@ -121,83 +140,93 @@ export default function Register() {
           )}
 
           <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <div className="input-icon-wrap">
-                <FiUser className="input-icon" size={16} />
-                <input
-                  className="form-input input-with-icon"
-                  type="text"
-                  name="name"
-                  placeholder="Your full name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
+  {/* Step 1 — Matric Number */}
+  <div className="form-group">
+    <label className="form-label">Matric Number</label>
+    <div className="input-icon-wrap" style={{ display: 'flex', gap: '0.5rem' }}>
+      <input
+        className="form-input"
+        type="text"
+        name="matricNo"
+        placeholder="e.g. 20/097344060"
+        value={formData.matricNo}
+        onChange={handleChange}
+        disabled={matricVerified || matricLoading}
+        required
+      />
+      {!matricVerified && (
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={handleVerifyMatric}
+          disabled={matricLoading || !formData.matricNo.trim()}
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          {matricLoading ? 'Checking...' : 'Verify'}
+        </button>
+      )}
+    </div>
+  </div>
 
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <div className="input-icon-wrap">
-                <FiMail className="input-icon" size={16} />
-                <input
-                  className="form-input input-with-icon"
-                  type="email"
-                  name="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
+  {/* Step 2 — Show student info if verified */}
+  {matricVerified && studentData && (
+    <div className="matric-verified-box">
+      <FiCheckCircle size={16} color="var(--success)" />
+      <div>
+        <p className="matric-verified-name">{studentData.name}</p>
+        <p className="matric-verified-dept">{studentData.department}</p>
+      </div>
+    </div>
+  )}
 
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <div className="input-icon-wrap">
-                <FiLock className="input-icon" size={16} />
-                <input
-                  className="form-input input-with-icon"
-                  type="password"
-                  name="password"
-                  placeholder="Min. 6 characters"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
+  {/* Step 3 — Password fields only show after verification */}
+  {matricVerified && (
+    <>
+      <div className="form-group">
+        <label className="form-label">Password</label>
+        <div className="input-icon-wrap">
+          <FiLock className="input-icon" size={16} />
+          <input
+            className="form-input input-with-icon"
+            type="password"
+            name="password"
+            placeholder="Min. 6 characters"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            disabled={loading}
+          />
+        </div>
+      </div>
 
-            <div className="form-group">
-              <label className="form-label">Confirm Password</label>
-              <div className="input-icon-wrap">
-                <FiLock className="input-icon" size={16} />
-                <input
-                  className="form-input input-with-icon"
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Repeat your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
+      <div className="form-group">
+        <label className="form-label">Confirm Password</label>
+        <div className="input-icon-wrap">
+          <FiLock className="input-icon" size={16} />
+          <input
+            className="form-input input-with-icon"
+            type="password"
+            name="confirmPassword"
+            placeholder="Repeat your password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            required
+            disabled={loading}
+          />
+        </div>
+      </div>
 
-            <button
-              className="btn btn-primary btn-full"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? 'Creating account...' : 'Create Account'}
-              {!loading && <FiArrowRight size={16} />}
-            </button>
-          </form>
+      <button
+        className="btn btn-primary btn-full"
+        type="submit"
+        disabled={loading}
+      >
+        {loading ? 'Creating account...' : 'Create Account'}
+        {!loading && <FiArrowRight size={16} />}
+      </button>
+    </>
+  )}
+</form>
           <div className="auth-divider">
   <span>or</span>
 </div>

@@ -26,19 +26,20 @@ export default function Login() {
   const [showReset, setShowReset] = useState(false);
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (loading) return;
-    setError('');
-    setLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      setError('Invalid email or password. Please try again.');
-      setLoading(false);
-    }
+  e.preventDefault();
+  e.stopPropagation();
+  if (loading) return;
+  setError('');
+  setLoading(true);
+  try {
+    const constructedEmail = `${email.replace(/\//g, '')}@recova.unical.edu.ng`;
+    await signInWithEmailAndPassword(auth, constructedEmail, password);
+    navigate('/dashboard', { replace: true });
+  } catch (err) {
+    setError('Invalid matric number or password. Please try again.');
+    setLoading(false);
   }
+}
 
   async function handleGoogleSignIn() {
   setGoogleLoading(true);
@@ -137,20 +138,20 @@ export default function Login() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Password</label>
-              <div className="input-icon-wrap">
-                <FiLock className="input-icon" size={16} />
-                <input
-                  className="form-input input-with-icon"
-                  type="password"
-                  placeholder="Your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
+  <label className="form-label">Matric Number</label>
+  <div className="input-icon-wrap">
+    <FiUser className="input-icon" size={16} />
+    <input
+      className="form-input input-with-icon"
+      type="text"
+      placeholder="e.g. 20/097344060"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      required
+      disabled={loading}
+    />
+  </div>
+</div>
 
             <button
               className="btn btn-primary btn-full"

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import ShieldBackground from '../../components/ShieldBackground/ShieldBackground';
 import {
   FiSearch, FiPackage, FiCpu, FiBell, FiShield,
   FiMessageSquare, FiUsers, FiSmartphone, FiSun,

@@ -3,29 +3,29 @@
    ============================================ */
 
 :root {
-  /* Primary Colors — Soft Blue */
-  --primary: #2563eb;
-  --primary-light: #3b82f6;
-  --primary-hover: #1d4ed8;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  /* Primary Colors — Deep Navy Blue (from UNICAL ID card) */
+  --primary: #1a2a4a;
+  --primary-light: #4a7ab5;
+  --primary-hover: #0f1e36;
+  --accent: #1a2a4a;
+  --accent-hover: #0f1e36;
 
-  /* Background Colors */
+  /* Background Colors — White base */
   --bg-primary: #ffffff;
-  --bg-secondary: #f0f7ff;
-  --bg-tertiary: #e8f1fd;
+  --bg-secondary: #f4f6fb;
+  --bg-tertiary: #e8edf7;
   --bg-card: #ffffff;
   --bg-input: #ffffff;
 
   /* Text Colors */
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
+  --text-primary: #1a2a4a;
+  --text-secondary: #2d3f66;
+  --text-muted: #6b7a99;
   --text-inverse: #ffffff;
 
   /* Border Colors */
-  --border: #dbeafe;
-  --border-focus: #2563eb;
+  --border: #d0d9ee;
+  --border-focus: #1a2a4a;
 
   /* Status Colors */
   --success: #16a34a;
@@ -34,13 +34,13 @@
   --warning-bg: #fef9c3;
   --error: #dc2626;
   --error-bg: #fee2e2;
-  --info: #0369a1;
-  --info-bg: #eff6ff;
+  --info: #4a7ab5;
+  --info-bg: #e8edf7;
 
   /* Shadow */
-  --shadow-sm: 0 1px 3px rgba(37, 99, 235, 0.08);
-  --shadow-md: 0 4px 16px rgba(37, 99, 235, 0.1);
-  --shadow-lg: 0 8px 32px rgba(37, 99, 235, 0.15);
+  --shadow-sm: 0 1px 3px rgba(26, 42, 74, 0.08);
+  --shadow-md: 0 4px 16px rgba(26, 42, 74, 0.1);
+  --shadow-lg: 0 8px 32px rgba(26, 42, 74, 0.15);
 
   /* Border Radius */
   --radius-sm: 6px;
@@ -57,36 +57,46 @@
 }
 
 /* ============================================
-   DARK MODE — Emerald Accent
+   DARK MODE — Navy becomes background, White becomes accent
    ============================================ */
 
 [data-theme='dark'] {
-  --primary: #4F7DF3;
-  --primary-light: #7B9FF5;
-  --primary-hover: #3D6AE0;
-  --accent: #4F7DF3;
-  --accent-hover: #3D6AE0;
+  /* Primary flips — white/light becomes the accent */
+  --primary: #e8edf7;
+  --primary-light: #ffffff;
+  --primary-hover: #d0d9ee;
+  --accent: #e8edf7;
+  --accent-hover: #d0d9ee;
 
-  --bg-primary: #0a0f1e;
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-  --bg-card: #1e293b;
-  --bg-input: #0f172a;
+  /* Background Colors — Deep navy base */
+  --bg-primary: #0d1526;
+  --bg-secondary: #1a2a4a;
+  --bg-tertiary: #243560;
+  --bg-card: #1a2a4a;
+  --bg-input: #0d1526;
 
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-inverse: #0a0f1e;
+  /* Text Colors — light on dark */
+  --text-primary: #f0f4ff;
+  --text-secondary: #c8d3ee;
+  --text-muted: #8a9bc0;
+  --text-inverse: #1a2a4a;
 
-  --border: #1e3a5f;
-  --border-focus: #4F7DF3;
+  /* Border Colors */
+  --border: #243560;
+  --border-focus: #e8edf7;
 
+  /* Shadow */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
 
+  /* Status Colors */
   --success: #10b981;
   --success-bg: #064e3b;
-  --info: #38bdf8;
-  --info-bg: #0c4a6e;
+  --warning: #f59e0b;
+  --warning-bg: #451a03;
+  --error: #f87171;
+  --error-bg: #450a0a;
+  --info: #93c5fd;
+  --info-bg: #1e3a5f;
 }

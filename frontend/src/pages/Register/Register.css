@@ -45,3 +45,27 @@
   color: var(--text-muted);
   line-height: 1.4;
 }
+
+.matric-verified-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--success-bg);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+}
+
+.matric-verified-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--success);
+  margin: 0;
+}
+
+.matric-verified-dept {
+  font-size: 0.78rem;
+  color: var(--success);
+  opacity: 0.8;
+  margin: 0;
+}

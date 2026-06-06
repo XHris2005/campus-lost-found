@@ -21,4 +21,19 @@ router.delete('/me', verifyToken, async (req, res) => {
   }
 });
 
+router.get('/verify-matric/:matricNo', async (req, res) => {
+  try {
+    const { matricNo } = req.params;
+    const docId = matricNo.replace(/\//g, '-');
+    const studentDoc = await db.collection('students').doc(docId).get();
+    if (!studentDoc.exists) {
+      return res.status(404).json({ error: 'Matric number not found' });
+    }
+    res.json({ student: studentDoc.data() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not verify matric number' });
+  }
+});
+
 module.exports = router;
