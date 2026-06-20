@@ -228,7 +228,27 @@
   color: var(--text-muted);
   pointer-events: none;
 }
+.input-icon-wrap {
+  position: relative;
+}
 
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary, #888);
+  padding: 4px;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-primary, #333);
+}
 .input-with-icon {
   padding-left: 2.75rem !important;
 }

@@ -69,3 +69,111 @@
   opacity: 0.8;
   margin: 0;
 }
+.register-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.register-step {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.register-step.step-active {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.register-step.step-done {
+  color: var(--success);
+}
+
+.step-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.register-step.step-active .step-dot {
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-color: var(--accent);
+}
+
+.register-step.step-done .step-dot {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.register-step:not(:last-child)::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--border);
+  margin-left: 0.5rem;
+}
+
+.form-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.matric-verified-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--success-bg);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+}
+
+.matric-verified-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--success);
+  margin: 0;
+}
+
+.matric-verified-dept {
+  font-size: 0.78rem;
+  color: var(--success);
+  opacity: 0.8;
+  margin: 0;
+}
+.input-icon-wrap {
+  position: relative;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary, #888);
+  padding: 4px;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-primary, #333);
+}

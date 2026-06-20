@@ -16,6 +16,8 @@ import MyChats from './pages/MyChats/MyChats';
 import AppLayout from './components/AppLayout/AppLayout';
 import NotFound from './pages/NotFound/NotFound';
 import Privacy from './pages/Privacy/Privacy';
+import VerifyEmail from './pages/VerifyEmail/VerifyEmail';
+import AdminLogin from './pages/AdminLogin/AdminLogin';
 
 export default function App() {
   return (
@@ -25,7 +27,9 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
