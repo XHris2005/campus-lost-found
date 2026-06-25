@@ -403,6 +403,41 @@
   background: #b91c1c;
 }
 
+[data-theme='dark'] .profile-avatar {
+  background: linear-gradient(135deg, #1a2a4a, #243560);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .stat-blue .stat-icon-wrap {
+  background: rgba(74, 122, 181, 0.2);
+  color: #93c5fd;
+}
+
+[data-theme='dark'] .stat-green .stat-icon-wrap {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+[data-theme='dark'] .stat-orange .stat-icon-wrap {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+[data-theme='dark'] .stat-purple .stat-icon-wrap {
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+}
+
+[data-theme='dark'] .profile-stats {
+  background: #243560;
+  border-color: #2d4070;
+}
+
+[data-theme='dark'] .profile-detail-item {
+  background: #243560;
+  border-color: #2d4070;
+}
+
 /* Responsive */
 @media (max-width: 1100px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }

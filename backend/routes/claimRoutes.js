@@ -21,8 +21,14 @@ const verificationDetails = sanitize(req.body.verificationDetails);
     }
 
     const match = matchDoc.data();
-    if (match.status !== 'approved') {
+    if (!['approved', 'auto_approved'].includes(match.status)) {
       return res.status(400).json({ error: 'Can only claim approved matches' });
+    }
+
+    // Prevent finder from claiming their own found item
+    const foundItemDoc = await db.collection('foundItems').doc(foundItemId).get();
+    if (foundItemDoc.exists && foundItemDoc.data().userId === req.user.uid) {
+      return res.status(403).json({ error: 'You cannot claim an item you reported as found.' });
     }
 
     // Check match belongs to this user
@@ -252,7 +258,7 @@ router.get('/match/:lostItemId', verifyToken, async (req, res) => {
     const matchSnapshot = await db
       .collection('matches')
       .where('lostItemId', '==', lostItemId)
-      .where('status', '==', 'approved')
+      .where('status', 'in', ['approved', 'auto_approved'])
       .get();
 
     if (matchSnapshot.empty) {
@@ -267,4 +273,62 @@ router.get('/match/:lostItemId', verifyToken, async (req, res) => {
   }
 });
 
+// GET /api/claims/match-by-found/:foundItemId
+router.get('/match-by-found/:foundItemId', verifyToken, async (req, res) => {
+  try {
+    const { foundItemId } = req.params;
+
+    // Check the found item doesn't belong to the requesting user
+    const foundItemDoc = await db.collection('foundItems').doc(foundItemId).get();
+    if (!foundItemDoc.exists) {
+      return res.status(404).json({ error: 'Found item not found.' });
+    }
+    if (foundItemDoc.data().userId === req.user.uid) {
+      return res.status(403).json({ error: 'You cannot claim an item you reported as found.' });
+    }
+
+    const matchSnapshot = await db
+      .collection('matches')
+      .where('foundItemId', '==', foundItemId)
+      .where('status', 'in', ['approved', 'auto_approved'])
+      .get();
+
+    if (matchSnapshot.empty) {
+      return res.status(404).json({ error: 'No approved match found' });
+    }
+
+    const matchDoc = matchSnapshot.docs.find(
+      (doc) => doc.data().lostUserId === req.user.uid
+    );
+
+    if (!matchDoc) {
+      return res.status(403).json({ error: 'No match found for your lost item' });
+    }
+
+    res.json({ id: matchDoc.id, ...matchDoc.data() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not fetch match' });
+  }
+});
+
+// GET /api/claims/my-matches — get all matches for the current user's lost items
+router.get('/my-matches', verifyToken, async (req, res) => {
+  try {
+    const matchSnapshot = await db
+      .collection('matches')
+      .where('lostUserId', '==', req.user.uid)
+      .get();
+
+    const matches = matchSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.json(matches);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not fetch matches' });
+  }
+});
 module.exports = router;

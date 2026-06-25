@@ -51,6 +51,20 @@ export default function NotificationsPanel() {
     }
   }
 
+  function getNotificationIcon(type) {
+    switch (type) {
+      case 'match_found': return '🔍';
+      case 'match_auto_approved': return '🎯';
+      case 'match_approved': return '✅';
+      case 'match_rejected': return '❌';
+      case 'chat_created': return '💬';
+      case 'chat_completed': return '🎉';
+      case 'claim_verified': return '🏆';
+      case 'claim_rejected': return '❌';
+      default: return '📢';
+    }
+  }
+
   return (
     <div className="notif-wrapper" ref={panelRef}>
       <button

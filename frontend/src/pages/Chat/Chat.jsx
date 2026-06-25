@@ -237,7 +237,7 @@ export default function Chat() {
             type="submit"
             disabled={sending || !text.trim()}
           >
-            <FiSend size={18} />
+            <FiSend size={18}  />
           </button>
         </form>
       )}

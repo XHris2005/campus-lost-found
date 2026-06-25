@@ -2,7 +2,9 @@ const { sendPushNotification } = require('./notificationService');
 const { db } = require('../config/firebase');
 const { generateItemEmbeddings } = require('./embeddingService');
 
-// Compute cosine similarity between two vectors
+const SIMILARITY_THRESHOLD = 0.70;
+const AUTO_APPROVE_THRESHOLD = 0.90;
+
 function cosineSimilarity(vecA, vecB) {
   if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
 
@@ -23,24 +25,20 @@ function cosineSimilarity(vecA, vecB) {
   return dotProduct / (magnitudeA * magnitudeB);
 }
 
-// Compute the combined similarity score between two items
 function computeCombinedScore(itemA, itemB) {
   const scores = [];
   const weights = [];
 
-  // Image-to-image similarity (CLIP)
   if (itemA.imageEmbedding && itemB.imageEmbedding) {
     scores.push(cosineSimilarity(itemA.imageEmbedding, itemB.imageEmbedding));
     weights.push(0.4);
   }
 
-  // Text-to-text similarity (CLIP text)
   if (itemA.clipTextEmbedding && itemB.clipTextEmbedding) {
     scores.push(cosineSimilarity(itemA.clipTextEmbedding, itemB.clipTextEmbedding));
     weights.push(0.3);
   }
 
-  // Text-to-text similarity (SBERT)
   if (itemA.sbertEmbedding && itemB.sbertEmbedding) {
     scores.push(cosineSimilarity(itemA.sbertEmbedding, itemB.sbertEmbedding));
     weights.push(0.3);
@@ -48,19 +46,76 @@ function computeCombinedScore(itemA, itemB) {
 
   if (scores.length === 0) return 0;
 
-  // Weighted average
-  let totalWeight = weights.reduce((a, b) => a + b, 0);
-  let weightedSum = scores.reduce((sum, score, i) => sum + score * weights[i], 0);
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const weightedSum = scores.reduce((sum, score, i) => sum + score * weights[i], 0);
 
   return weightedSum / totalWeight;
 }
 
-// Run matching for a newly submitted item against all items of the opposite type
+// Shared function — used by both auto-approval here and admin approval in adminRoutes.js
+async function createChatForMatch(matchId, lostItemId, foundItemId, ownerId, finderId) {
+  if (!ownerId || !finderId || ownerId === finderId) return null;
+
+  const chatRef = await db.collection('chats').add({
+    matchId,
+    lostItemId,
+    foundItemId,
+    ownerId,
+    finderId,
+    ownerConfirmed: false,
+    finderConfirmed: false,
+    status: 'active',
+    createdAt: new Date().toISOString(),
+  });
+
+  await db.collection('chats').doc(chatRef.id).collection('messages').add({
+    senderId: 'system',
+    senderName: 'System',
+    text: '👋 A match has been confirmed! Use this chat to arrange a meeting place to return the item. Once the item has been returned, both parties must confirm below.',
+    createdAt: new Date().toISOString(),
+  });
+
+  // In-app notifications for both parties
+  await db.collection('notifications').add({
+    userId: ownerId,
+    type: 'chat_created',
+    message: 'A chat room has been created for you to arrange collection of your item!',
+    chatId: chatRef.id,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+  });
+
+  await db.collection('notifications').add({
+    userId: finderId,
+    type: 'chat_created',
+    message: 'A chat room has been created to arrange return of the found item!',
+    chatId: chatRef.id,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+  });
+
+  // Push notifications for both parties
+  await sendPushNotification(ownerId, {
+    title: '💬 Chat Room Created!',
+    body: 'A chat has been set up to arrange collection of your item.',
+    type: 'chat_created',
+    url: `/chat/${chatRef.id}`,
+  });
+
+  await sendPushNotification(finderId, {
+    title: '💬 Chat Room Created!',
+    body: 'A chat has been set up to arrange return of the found item.',
+    type: 'chat_created',
+    url: `/chat/${chatRef.id}`,
+  });
+
+  return chatRef.id;
+}
+
 async function runMatching(newItemId, newItemType) {
   try {
     console.log(`Running matching for ${newItemType} item: ${newItemId}`);
 
-    // Get the new item from Firestore
     const newItemCollection = newItemType === 'lost' ? 'lostItems' : 'foundItems';
     const oppositeCollection = newItemType === 'lost' ? 'foundItems' : 'lostItems';
 
@@ -72,12 +127,10 @@ async function runMatching(newItemId, newItemType) {
 
     const newItem = { id: newItemDoc.id, ...newItemDoc.data() };
 
-    // If the item doesn't have embeddings yet, generate them now
     if (!newItem.sbertEmbedding) {
       const text = `${newItem.name} ${newItem.description} ${newItem.category}`;
       const embeddings = await generateItemEmbeddings(newItem.imageURL, text);
 
-      // Save embeddings to Firestore
       await db.collection(newItemCollection).doc(newItemId).update({
         imageEmbedding: embeddings.imageEmbedding,
         clipTextEmbedding: embeddings.clipTextEmbedding,
@@ -89,7 +142,6 @@ async function runMatching(newItemId, newItemType) {
       newItem.sbertEmbedding = embeddings.sbertEmbedding;
     }
 
-    // Get all active items from the opposite collection
     const oppositeSnapshot = await db
       .collection(oppositeCollection)
       .where('status', '==', 'active')
@@ -100,13 +152,11 @@ async function runMatching(newItemId, newItemType) {
       return;
     }
 
-    const SIMILARITY_THRESHOLD = 0.70;
     const matches = [];
 
     for (const doc of oppositeSnapshot.docs) {
       const oppositeItem = { id: doc.id, ...doc.data() };
 
-      // Generate embeddings for opposite item if missing
       if (!oppositeItem.sbertEmbedding) {
         const text = `${oppositeItem.name} ${oppositeItem.description} ${oppositeItem.category}`;
         const embeddings = await generateItemEmbeddings(oppositeItem.imageURL, text);
@@ -130,57 +180,97 @@ async function runMatching(newItemId, newItemType) {
       }
     }
 
-    // Save matches to Firestore
     for (const match of matches) {
       const lostItemId = newItemType === 'lost' ? newItemId : match.item.id;
       const foundItemId = newItemType === 'found' ? newItemId : match.item.id;
       const lostUserId = newItemType === 'lost' ? newItem.userId : match.item.userId;
+      const foundUserId = newItemType === 'found' ? newItem.userId : match.item.userId;
 
-      // Check if this match already exists
+      const isAutoApproved = match.score >= AUTO_APPROVE_THRESHOLD;
+      const matchStatus = isAutoApproved ? 'auto_approved' : 'pending';
+
       const existingMatch = await db
         .collection('matches')
         .where('lostItemId', '==', lostItemId)
         .where('foundItemId', '==', foundItemId)
         .get();
 
-      if (existingMatch.empty) {
-        await db.collection('matches').add({
-          lostItemId,
-          foundItemId,
-          combinedScore: match.score,
-          status: 'pending',
-          notifiedUser: lostUserId,
-          createdAt: new Date().toISOString(),
-        });
+      if (!existingMatch.empty) continue;
 
-        console.log(`Match saved! Score: ${match.score.toFixed(3)}`);
+      // Save match doc
+      const matchRef = await db.collection('matches').add({
+        lostItemId,
+        foundItemId,
+        lostUserId,
+        foundUserId,
+        combinedScore: match.score,
+        status: matchStatus,
+        notifiedUser: lostUserId,
+        createdAt: new Date().toISOString(),
+        ...(isAutoApproved && { autoApprovedAt: new Date().toISOString() }),
+      });
 
-        // Save notification for the item owner
+      console.log(`Match saved! Score: ${match.score.toFixed(3)}, Status: ${matchStatus}`);
+
+      if (isAutoApproved) {
+        // Update item statuses to matched immediately
+        await db.collection('lostItems').doc(lostItemId).update({ status: 'matched' });
+        await db.collection('foundItems').doc(foundItemId).update({ status: 'matched' });
+
+        // Create chat room immediately
+        await createChatForMatch(matchRef.id, lostItemId, foundItemId, lostUserId, foundUserId);
+
+        // Notify lost item owner
         await db.collection('notifications').add({
           userId: lostUserId,
-          type: 'match_found',
-          message: `A potential match was found for your lost item!`,
+          type: 'match_auto_approved',
+          message: `Great news! We're confident your lost item has been found (${Math.round(match.score * 100)}% match). A chat room has been created — tap to connect with the finder.`,
           lostItemId,
           foundItemId,
           isRead: false,
           createdAt: new Date().toISOString(),
         });
 
-        // Save notification
+        // Notify finder
         await db.collection('notifications').add({
-          userId: lostUserId,
-          type: 'match_found',
-          message: `A potential match was found for your lost item!`,
+          userId: foundUserId,
+          type: 'match_auto_approved',
+          message: `The item you found has been matched with its owner (${Math.round(match.score * 100)}% match). A chat room has been created — tap to connect.`,
           lostItemId,
           foundItemId,
           isRead: false,
           createdAt: new Date().toISOString(),
         });
 
-        // Send push notification
         await sendPushNotification(lostUserId, {
-          title: '🎯 Potential Match Found!',
-          body: 'A potential match was found for your lost item. Tap to view.',
+          title: '🎯 High Confidence Match Found!',
+          body: 'We\'re confident your lost item has been found. A chat room is ready.',
+          type: 'match_auto_approved',
+          url: '/my-chats',
+        });
+
+        await sendPushNotification(foundUserId, {
+          title: '✅ Item Matched With Owner!',
+          body: 'The item you found has been matched with its owner. A chat room is ready.',
+          type: 'match_auto_approved',
+          url: '/my-chats',
+        });
+
+      } else {
+        // Low confidence — notify lost owner only, pending admin review
+        await db.collection('notifications').add({
+          userId: lostUserId,
+          type: 'match_found',
+          message: `A potential match was found for your lost item (${Math.round(match.score * 100)}% match). Our team is reviewing it.`,
+          lostItemId,
+          foundItemId,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        });
+
+        await sendPushNotification(lostUserId, {
+          title: '🔍 Potential Match Found!',
+          body: 'A potential match was found for your lost item. Our team is reviewing it.',
           type: 'match_found',
           url: '/listings',
         });
@@ -193,4 +283,4 @@ async function runMatching(newItemId, newItemType) {
   }
 }
 
-module.exports = { runMatching };
+module.exports = { runMatching, createChatForMatch };

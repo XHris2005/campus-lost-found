@@ -66,3 +66,23 @@ export async function getMatchForLostItem(lostItemId) {
   if (!res.ok) throw new Error('Could not fetch match');
   return res.json();
 }
+
+export async function getMatchForFoundItem(foundItemId) {
+  const token = await getToken();
+  const res = await fetch(
+    `${BACKEND_URL}/api/claims/match-by-found/${foundItemId}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error('Could not fetch match');
+  return res.json();
+}
+
+export async function getMyMatches() {
+  const token = await getToken();
+  const res = await fetch(`${BACKEND_URL}/api/claims/my-matches`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Could not fetch matches');
+  return data;
+}

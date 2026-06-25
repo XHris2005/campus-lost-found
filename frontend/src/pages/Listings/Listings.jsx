@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getLostItems, getFoundItems } from '../../api/itemApi';
-import { getMatchForLostItem } from '../../api/claimApi';
+import { getMyMatches } from '../../api/claimApi';
 import ItemCard from '../../components/ItemCard/ItemCard';
 import { useAuth } from '../../context/AuthContext';
 import {
-  FiSearch, FiFilter, FiList, FiPackage,
-  FiX, FiSliders,
+  FiSearch, FiPackage, FiX,
 } from 'react-icons/fi';
 import './Listings.css';
 
@@ -23,12 +22,13 @@ export default function Listings() {
   const [category, setCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [myMatches, setMyMatches] = useState([]);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchItems();
+    fetchMyMatches();
   }, [activeTab]);
 
   useEffect(() => {
@@ -52,6 +52,16 @@ export default function Listings() {
     setLoading(false);
   }
 
+  async function fetchMyMatches() {
+    try {
+      const matches = await getMyMatches();
+      setMyMatches(matches);
+    } catch (err) {
+      // non-blocking — listings still work without match data
+      console.error('Could not fetch matches:', err);
+    }
+  }
+
   function applyFilters() {
     let results = [...items];
     if (category !== 'All') {
@@ -73,27 +83,26 @@ export default function Listings() {
     setCategory('All');
   }
 
-  async function handleClaim(item) {
-    try {
-      const match = await getMatchForLostItem(item.id);
-      navigate('/claim', {
-        state: {
-          matchId: match.id,
-          lostItemId: item.id,
-          foundItemId: match.foundItemId,
-          lostItemName: item.name,
-        },
-      });
-    } catch (err) {
-      alert('Could not load match details. Please try again.');
-    }
+  // Returns match info for a found item if it matches one of the user's lost items
+  function getMatchForFoundItem(foundItemId) {
+    return myMatches.find(m => m.foundItemId === foundItemId) || null;
+  }
+
+  async function handleFoundClaim(item, match) {
+    navigate('/claim', {
+      state: {
+        matchId: match.id,
+        lostItemId: match.lostItemId,
+        foundItemId: item.id,
+        lostItemName: item.name,
+      },
+    });
   }
 
   const hasFilters = search || category !== 'All';
 
   return (
     <div className="listings-page">
-      {/* Header */}
       <div className="listings-header">
         <div>
           <h1 className="page-title">Browse Listings</h1>
@@ -103,7 +112,6 @@ export default function Listings() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="listings-tabs">
         <button
           className={`listings-tab ${activeTab === 'lost' ? 'listings-tab-active' : ''}`}
@@ -121,7 +129,6 @@ export default function Listings() {
         </button>
       </div>
 
-      {/* Search & Filters */}
       <div className="listings-controls">
         <div className="search-wrap">
           <FiSearch className="search-icon" size={16} />
@@ -159,7 +166,6 @@ export default function Listings() {
         </div>
       </div>
 
-      {/* Results Info */}
       {!loading && (
         <div className="listings-meta">
           <span className="listings-count">
@@ -169,7 +175,6 @@ export default function Listings() {
         </div>
       )}
 
-      {/* Content */}
       {loading ? (
         <div className="loading-container">
           <div className="spinner" />
@@ -203,19 +208,26 @@ export default function Listings() {
         </div>
       ) : (
         <div className="grid-auto">
-          {filtered.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              type={activeTab}
-              onClaim={activeTab === 'lost' 
-  && item.status === 'matched'
-  && item.userId === currentUser?.uid
-  ? handleClaim
-  : null
-}
-            />
-          ))}
+          {filtered.map((item) => {
+            const match = activeTab === 'found'
+              && item.userId !== currentUser?.uid
+              ? getMatchForFoundItem(item.id)
+              : null;
+
+            return (
+              <ItemCard
+                key={item.id}
+                item={item}
+                type={activeTab}
+                matchStatus={match?.status || null}
+                onClaim={
+                  match && ['approved', 'auto_approved'].includes(match.status)
+                    ? () => handleFoundClaim(item, match)
+                    : null
+                }
+              />
+            );
+          })}
         </div>
       )}
     </div>

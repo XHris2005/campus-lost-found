@@ -330,3 +330,28 @@ body {
   .page-content { padding: 1.5rem 1rem; }
   .page-header { flex-direction: column; align-items: flex-start; }
 }
+
+/* ============================================
+   DARK MODE FIXES
+   ============================================ */
+
+/* Cards stand out more against the dark background */
+[data-theme='dark'] .card {
+  background-color: #1e2f52;
+  border-color: #2d4070;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Sidebar and profile avatars — fix white-on-white gradient */
+[data-theme='dark'] .sidebar-avatar,
+[data-theme='dark'] .sidebar-brand-icon {
+  background: linear-gradient(135deg, #2d4070, #4a7ab5);
+  color: #ffffff;
+}
+
+[data-theme='dark'] .sidebar-brand-name {
+  background: linear-gradient(135deg, #e8edf7, #93c5fd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

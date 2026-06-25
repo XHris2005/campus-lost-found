@@ -1,10 +1,10 @@
 const { sendPushNotification } = require('../services/notificationService');
+const { createChatForMatch } = require('../services/matchingService');
 const express = require('express');
 const router = express.Router();
 const { db } = require('../config/firebase');
 const { verifyToken } = require('../middleware/authMiddleware');
 
-// Middleware to verify admin role
 async function verifyAdmin(req, res, next) {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
@@ -17,7 +17,7 @@ async function verifyAdmin(req, res, next) {
   }
 }
 
-// GET /api/admin/matches — get all pending matches with item details
+// GET /api/admin/matches — get all matches with item details
 router.get('/matches', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const matchesSnapshot = await db
@@ -25,11 +25,8 @@ router.get('/matches', verifyToken, verifyAdmin, async (req, res) => {
       .orderBy('createdAt', 'desc')
       .get();
 
-    if (matchesSnapshot.empty) {
-      return res.json([]);
-    }
+    if (matchesSnapshot.empty) return res.json([]);
 
-    // Fetch full item details for each match
     const matches = await Promise.all(
       matchesSnapshot.docs.map(async (doc) => {
         const match = { id: doc.id, ...doc.data() };
@@ -41,12 +38,8 @@ router.get('/matches', verifyToken, verifyAdmin, async (req, res) => {
 
         return {
           ...match,
-          lostItem: lostDoc.exists
-            ? { id: lostDoc.id, ...lostDoc.data() }
-            : null,
-          foundItem: foundDoc.exists
-            ? { id: foundDoc.id, ...foundDoc.data() }
-            : null,
+          lostItem: lostDoc.exists ? { id: lostDoc.id, ...lostDoc.data() } : null,
+          foundItem: foundDoc.exists ? { id: foundDoc.id, ...foundDoc.data() } : null,
         };
       })
     );
@@ -75,7 +68,6 @@ router.patch('/matches/:matchId', verifyToken, verifyAdmin, async (req, res) => 
 
     const match = matchDoc.data();
 
-    // Update match status
     await db.collection('matches').doc(matchId).update({
       status,
       reviewedBy: req.user.uid,
@@ -83,18 +75,17 @@ router.patch('/matches/:matchId', verifyToken, verifyAdmin, async (req, res) => 
     });
 
     if (status === 'approved') {
-      // 1. In-app notification to owner
+      // Notify lost item owner
       await db.collection('notifications').add({
         userId: match.notifiedUser,
         type: 'match_approved',
-        message: 'Great news! Admin has confirmed a match for your lost item. Please visit the Lost & Found office to claim it.',
+        message: 'Great news! Admin has confirmed a match for your lost item.',
         lostItemId: match.lostItemId,
         foundItemId: match.foundItemId,
         isRead: false,
         createdAt: new Date().toISOString(),
       });
 
-      // 2. Push notification to owner
       await sendPushNotification(match.notifiedUser, {
         title: '✅ Match Approved!',
         body: 'An admin has confirmed a match for your lost item. Tap to claim it.',
@@ -102,74 +93,18 @@ router.patch('/matches/:matchId', verifyToken, verifyAdmin, async (req, res) => 
         url: '/listings',
       });
 
-      // 3. Update item statuses
-      await db.collection('lostItems').doc(match.lostItemId).update({
-        status: 'matched',
-      });
-      await db.collection('foundItems').doc(match.foundItemId).update({
-        status: 'matched',
-      });
+      // Update item statuses
+      await db.collection('lostItems').doc(match.lostItemId).update({ status: 'matched' });
+      await db.collection('foundItems').doc(match.foundItemId).update({ status: 'matched' });
 
-      // 4. Get owner and finder IDs
+      // Get owner and finder IDs
       const lostItemDoc = await db.collection('lostItems').doc(match.lostItemId).get();
       const foundItemDoc = await db.collection('foundItems').doc(match.foundItemId).get();
       const ownerId = lostItemDoc.data()?.userId;
       const finderId = foundItemDoc.data()?.userId;
 
-      // 5. Create chat room
-      if (ownerId && finderId && ownerId !== finderId) {
-        const chatRef = await db.collection('chats').add({
-          matchId,
-          lostItemId: match.lostItemId,
-          foundItemId: match.foundItemId,
-          ownerId,
-          finderId,
-          ownerConfirmed: false,
-          finderConfirmed: false,
-          status: 'active',
-          createdAt: new Date().toISOString(),
-        });
-
-        // 6. Send welcome system message
-        await db.collection('chats').doc(chatRef.id).collection('messages').add({
-          senderId: 'system',
-          senderName: 'System',
-          text: '👋 A match has been confirmed! Use this chat to arrange a meeting place to return the item. Once the item has been returned, both parties must confirm below.',
-          createdAt: new Date().toISOString(),
-        });
-
-        // 7. In-app notifications for chat
-        await db.collection('notifications').add({
-          userId: ownerId,
-          type: 'chat_created',
-          message: 'A chat room has been created for you to arrange collection of your item!',
-          chatId: chatRef.id,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        });
-        await db.collection('notifications').add({
-          userId: finderId,
-          type: 'chat_created',
-          message: 'A chat room has been created to arrange return of the found item!',
-          chatId: chatRef.id,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        });
-
-        // 8. Push notifications for chat
-        await sendPushNotification(ownerId, {
-          title: '💬 Chat Room Created!',
-          body: 'A chat has been set up to arrange collection of your item.',
-          type: 'chat_created',
-          url: `/chat/${chatRef.id}`,
-        });
-        await sendPushNotification(finderId, {
-          title: '💬 Chat Room Created!',
-          body: 'A chat has been set up to arrange return of the found item.',
-          type: 'chat_created',
-          url: `/chat/${chatRef.id}`,
-        });
-      }
+      // Create chat using shared function
+      await createChatForMatch(matchId, match.lostItemId, match.foundItemId, ownerId, finderId);
     }
 
     if (status === 'rejected') {
@@ -190,7 +125,7 @@ router.patch('/matches/:matchId', verifyToken, verifyAdmin, async (req, res) => 
   }
 });
 
-// GET /api/admin/stats — platform statistics
+// GET /api/admin/stats
 router.get('/stats', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const [lostSnap, foundSnap, matchesSnap, usersSnap] = await Promise.all([
@@ -207,7 +142,7 @@ router.get('/stats', verifyToken, verifyAdmin, async (req, res) => {
       totalFoundItems: foundSnap.size,
       totalMatches: matchesSnap.size,
       pendingMatches: matches.filter((m) => m.status === 'pending').length,
-      approvedMatches: matches.filter((m) => m.status === 'approved').length,
+      approvedMatches: matches.filter((m) => m.status === 'approved' || m.status === 'auto_approved').length,
       rejectedMatches: matches.filter((m) => m.status === 'rejected').length,
       totalUsers: usersSnap.size,
     });
@@ -217,26 +152,16 @@ router.get('/stats', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
-// GET /api/admin/users — get all users
+// GET /api/admin/users
 router.get('/users', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const snapshot = await db
-      .collection('users')
-      .orderBy('createdAt', 'desc')
-      .get();
-
-    const users = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
+    const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+    const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     res.json(users);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not fetch users' });
   }
 });
-
-
 
 module.exports = router;

@@ -59,6 +59,26 @@
   background: var(--success) !important;
 }
 
+[data-theme='dark'] .listings-tab-active {
+  background: #4a7ab5 !important;
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .listings-tab-found.listings-tab-active {
+  background: var(--success) !important;
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .category-btn-active {
+  background: rgba(74, 122, 181, 0.2);
+  border-color: #4a7ab5;
+  color: #93c5fd;
+}
+
+[data-theme='dark'] .search-input:focus {
+  box-shadow: 0 0 0 3px rgba(232, 237, 247, 0.1);
+}
+
 /* Controls */
 .listings-controls {
   display: flex;
