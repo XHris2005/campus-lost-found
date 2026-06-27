@@ -19,6 +19,7 @@ import './Dashboard.css';
 export default function Dashboard() {
   const { currentUser, userRole } = useAuth();
   const navigate = useNavigate();
+  const [userProfile, setUserProfile] = useState(null);
   const [myLostItems, setMyLostItems] = useState([]);
   const [myFoundItems, setMyFoundItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
         setMyLostItems(lost.filter(i => i.userId === currentUser?.uid));
         setMyFoundItems(found.filter(i => i.userId === currentUser?.uid));
         setRecoveredCount(userDoc.data()?.recoveredCount || 0);
+        setUserProfile(userDoc.data() || null);
       } catch (err) {
         console.error(err);
       }
@@ -250,6 +252,17 @@ const [deleteLoading, setDeleteLoading] = useState(false);
                 <p className="profile-detail-value">{currentUser?.email}</p>
               </div>
             </div>
+            {currentUser && userProfile?.role === 'lecturer' && userProfile?.lecturerId && (
+              <div className="profile-detail-item">
+                <div className="profile-detail-icon">
+                  <FiUser size={16} />
+                </div>
+                <div>
+                  <p className="profile-detail-label">Lecturer ID</p>
+                  <p className="profile-detail-value">{userProfile.lecturerId}</p>
+                </div>
+              </div>
+            )}
             <div className="profile-detail-item">
               <div className="profile-detail-icon">
                 <FiUser size={16} />

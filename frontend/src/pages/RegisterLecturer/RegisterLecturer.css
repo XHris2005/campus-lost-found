@@ -1,0 +1,44 @@
+.lecturer-id-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.lecturer-id-reveal h2 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.lecturer-id-reveal p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  max-width: 320px;
+  margin: 0;
+}
+
+.lecturer-id-box {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--bg-secondary);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 1rem 2rem;
+  letter-spacing: 0.1em;
+  user-select: all;
+}
+
+[data-theme='dark'] .lecturer-id-box {
+  color: #93c5fd;
+  border-color: #4a7ab5;
+}
+
+.lecturer-id-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

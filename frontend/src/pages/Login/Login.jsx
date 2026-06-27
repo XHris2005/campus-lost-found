@@ -230,6 +230,10 @@ export default function Login() {
             <Link to="/register">Create one here</Link>
           </p>
           <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
+  Lecturer?{' '}
+  <Link to="/lecturer-login">Lecturer login</Link>
+</p>
+          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
             Administrator?{' '}
             <Link to="/admin-login">Admin login</Link>
           </p>

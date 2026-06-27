@@ -46,3 +46,27 @@ export async function lookupMatricEmail(matricNo) {
   if (!res.ok) throw new Error(data.error || 'Matric number not found');
   return data;
 }
+
+// Lecturer registration — called server-side since Firebase Auth user
+// is created via Admin SDK (not client SDK) to allow returning the lecturerId
+export async function registerLecturer({ name, email, password }) {
+  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/register-lecturer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Could not create lecturer account');
+  return data;
+}
+
+// Used during LECTURER LOGIN — resolves Lecturer ID or email → email
+export async function lookupLecturerEmail(idOrEmail) {
+  const res = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/users/lookup-lecturer/${encodeURIComponent(idOrEmail)}`,
+    { method: 'GET' }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Could not find lecturer account');
+  return data;
+}
