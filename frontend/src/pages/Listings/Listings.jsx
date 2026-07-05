@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { getLostItems, getFoundItems } from '../../api/itemApi';
 import { getMyMatches } from '../../api/claimApi';
 import ItemCard from '../../components/ItemCard/ItemCard';
+import ClaimModal from '../../components/ClaimModal/ClaimModal';
 import { useAuth } from '../../context/AuthContext';
-import {
-  FiSearch, FiPackage, FiX,
-} from 'react-icons/fi';
+import { FiSearch, FiPackage, FiX } from 'react-icons/fi';
 import './Listings.css';
 
 const CATEGORIES = [
@@ -23,6 +22,7 @@ export default function Listings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [myMatches, setMyMatches] = useState([]);
+  const [claimingItem, setClaimingItem] = useState(null);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -57,7 +57,6 @@ export default function Listings() {
       const matches = await getMyMatches();
       setMyMatches(matches);
     } catch (err) {
-      // non-blocking — listings still work without match data
       console.error('Could not fetch matches:', err);
     }
   }
@@ -88,15 +87,14 @@ export default function Listings() {
     return myMatches.find(m => m.foundItemId === foundItemId) || null;
   }
 
-  async function handleFoundClaim(item, match) {
-    navigate('/claim', {
-      state: {
-        matchId: match.id,
-        lostItemId: match.lostItemId,
-        foundItemId: item.id,
-        lostItemName: item.name,
-      },
-    });
+  // A found item is manually claimable when:
+  // - It belongs to someone else
+  // - It has no active/approved/pending match, OR all existing matches are rejected
+  function isClaimable(item) {
+    if (item.userId === currentUser?.uid) return false;
+    const match = getMatchForFoundItem(item.id);
+    if (!match) return true;
+    return match.status === 'rejected';
   }
 
   const hasFilters = search || category !== 'All';
@@ -117,15 +115,13 @@ export default function Listings() {
           className={`listings-tab ${activeTab === 'lost' ? 'listings-tab-active' : ''}`}
           onClick={() => setActiveTab('lost')}
         >
-          <FiSearch size={16} />
-          Lost Items
+          <FiSearch size={16} /> Lost Items
         </button>
         <button
           className={`listings-tab ${activeTab === 'found' ? 'listings-tab-active listings-tab-found' : ''}`}
           onClick={() => setActiveTab('found')}
         >
-          <FiPackage size={16} />
-          Found Items
+          <FiPackage size={16} /> Found Items
         </button>
       </div>
 
@@ -189,30 +185,18 @@ export default function Listings() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">
-            {activeTab === 'lost' ? '🔍' : '📦'}
-          </div>
-          <h3>
-            {hasFilters ? 'No items match your search' : `No ${activeTab} items yet`}
-          </h3>
-          <p>
-            {hasFilters
-              ? 'Try adjusting your search or filters'
-              : `Be the first to report a ${activeTab} item`}
-          </p>
+          <div className="empty-state-icon">{activeTab === 'lost' ? '🔍' : '📦'}</div>
+          <h3>{hasFilters ? 'No items match your search' : `No ${activeTab} items yet`}</h3>
+          <p>{hasFilters ? 'Try adjusting your search or filters' : `Be the first to report a ${activeTab} item`}</p>
           {hasFilters && (
-            <button className="btn btn-secondary" onClick={clearFilters}>
-              Clear Filters
-            </button>
+            <button className="btn btn-secondary" onClick={clearFilters}>Clear Filters</button>
           )}
         </div>
       ) : (
         <div className="grid-auto">
           {filtered.map((item) => {
-            const match = activeTab === 'found'
-              && item.userId !== currentUser?.uid
-              ? getMatchForFoundItem(item.id)
-              : null;
+            const match = activeTab === 'found' ? getMatchForFoundItem(item.id) : null;
+            const claimable = activeTab === 'found' && isClaimable(item);
 
             return (
               <ItemCard
@@ -220,15 +204,22 @@ export default function Listings() {
                 item={item}
                 type={activeTab}
                 matchStatus={match?.status || null}
-                onClaim={
-                  match && ['approved', 'auto_approved'].includes(match.status)
-                    ? () => handleFoundClaim(item, match)
-                    : null
-                }
+                onClaim={claimable ? () => setClaimingItem(item) : null}
               />
             );
           })}
         </div>
+      )}
+
+      {claimingItem && (
+        <ClaimModal
+          foundItem={claimingItem}
+          onClose={() => {
+            setClaimingItem(null);
+            fetchItems();
+            fetchMyMatches();
+          }}
+        />
       )}
     </div>
   );

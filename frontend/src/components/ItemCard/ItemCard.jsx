@@ -52,7 +52,7 @@ export default function ItemCard({ item, type, onClaim }) {
           </span>
         </div>
 
-        {isMatched && onClaim && (
+        {onClaim && (
           <button
             className="btn btn-primary btn-full item-claim-btn"
             onClick={() => onClaim(item)}

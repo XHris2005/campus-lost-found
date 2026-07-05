@@ -283,4 +283,9 @@ async function runMatching(newItemId, newItemType) {
   }
 }
 
-module.exports = { runMatching, createChatForMatch };
+// Export for use in manual claim route
+function computeScore(itemA, itemB) {
+  return computeCombinedScore(itemA, itemB);
+}
+
+module.exports = { runMatching, createChatForMatch, computeScore };

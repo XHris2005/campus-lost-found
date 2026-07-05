@@ -97,6 +97,35 @@ router.patch('/matches/:matchId', verifyToken, verifyAdmin, async (req, res) => 
       await db.collection('lostItems').doc(match.lostItemId).update({ status: 'matched' });
       await db.collection('foundItems').doc(match.foundItemId).update({ status: 'matched' });
 
+      // Reject all other pending claims on the same found item
+      const otherClaims = await db
+        .collection('claims')
+        .where('foundItemId', '==', match.foundItemId)
+        .where('status', '==', 'pending')
+        .get();
+
+      await Promise.all(
+        otherClaims.docs
+          .filter((doc) => doc.id !== matchId)
+          .map(async (doc) => {
+            await doc.ref.update({ status: 'rejected' });
+            const claimData = doc.data();
+            // Update the associated match to rejected too
+            if (claimData.matchId) {
+              await db.collection('matches').doc(claimData.matchId).update({ status: 'rejected' });
+            }
+            // Notify the other claimants
+            await db.collection('notifications').add({
+              userId: claimData.claimantId,
+              type: 'claim_rejected',
+              message: 'Another claimant was verified as the owner of the found item you claimed. We will keep looking for your lost item.',
+              claimId: doc.id,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+            });
+          })
+      );
+
       // Get owner and finder IDs
       const lostItemDoc = await db.collection('lostItems').doc(match.lostItemId).get();
       const foundItemDoc = await db.collection('foundItems').doc(match.foundItemId).get();

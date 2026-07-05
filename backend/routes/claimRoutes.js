@@ -3,90 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../config/firebase');
 const { verifyToken } = require('../middleware/authMiddleware');
-const sanitize = require('../utils/sanitize'); // add this import
-
-// POST /api/claims — submit a claim for an approved match
-router.post('/', verifyToken, async (req, res) => {
-  try {
-    const { matchId, lostItemId, foundItemId } = req.body;
-const verificationDetails = sanitize(req.body.verificationDetails);
-    if (!matchId || !lostItemId || !verificationDetails) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-
-    // Verify the match exists and is approved
-    const matchDoc = await db.collection('matches').doc(matchId).get();
-    if (!matchDoc.exists) {
-      return res.status(404).json({ error: 'Match not found' });
-    }
-
-    const match = matchDoc.data();
-    if (!['approved', 'auto_approved'].includes(match.status)) {
-      return res.status(400).json({ error: 'Can only claim approved matches' });
-    }
-
-    // Prevent finder from claiming their own found item
-    const foundItemDoc = await db.collection('foundItems').doc(foundItemId).get();
-    if (foundItemDoc.exists && foundItemDoc.data().userId === req.user.uid) {
-      return res.status(403).json({ error: 'You cannot claim an item you reported as found.' });
-    }
-
-    // Check match belongs to this user
-    if (match.notifiedUser !== req.user.uid) {
-      return res.status(403).json({ error: 'Unauthorized — not your match' });
-    }
-
-    // Check if claim already exists
-    const existingClaim = await db
-      .collection('claims')
-      .where('matchId', '==', matchId)
-      .where('claimantId', '==', req.user.uid)
-      .get();
-
-    if (!existingClaim.empty) {
-      return res.status(400).json({ error: 'You have already submitted a claim for this match' });
-    }
-
-    // Create the claim
-    const claimRef = await db.collection('claims').add({
-      matchId,
-      lostItemId,
-      foundItemId,
-      claimantId: req.user.uid,
-      claimantEmail: req.user.email,
-      verificationDetails,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    });
-
-    // Notify admins — get all admin users
-    const adminsSnapshot = await db
-      .collection('users')
-      .where('role', '==', 'admin')
-      .get();
-
-    await Promise.all(
-      adminsSnapshot.docs.map((adminDoc) =>
-        db.collection('notifications').add({
-          userId: adminDoc.id,
-          type: 'claim_submitted',
-          message: `A user has submitted a claim and is awaiting verification.`,
-          claimId: claimRef.id,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        })
-      )
-    );
-
-    res.status(201).json({
-      message: 'Claim submitted successfully',
-      claimId: claimRef.id,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not submit claim' });
-  }
-});
+const sanitize = require('../utils/sanitize');
 
 // GET /api/claims/my — get current user's claims
 router.get('/my', verifyToken, async (req, res) => {
@@ -112,7 +29,6 @@ router.get('/my', verifyToken, async (req, res) => {
 // GET /api/claims — get all claims (admin only)
 router.get('/', verifyToken, async (req, res) => {
   try {
-    // Verify admin
     const userDoc = await db.collection('users').doc(req.user.uid).get();
     if (!userDoc.exists || userDoc.data().role !== 'admin') {
       return res.status(403).json({ error: 'Admins only' });
@@ -151,14 +67,13 @@ router.get('/', verifyToken, async (req, res) => {
 // PATCH /api/claims/:claimId — process a claim (admin only)
 router.patch('/:claimId', verifyToken, async (req, res) => {
   try {
-    // Verify admin
     const userDoc = await db.collection('users').doc(req.user.uid).get();
     if (!userDoc.exists || userDoc.data().role !== 'admin') {
       return res.status(403).json({ error: 'Admins only' });
     }
 
     const { claimId } = req.params;
-    const { status } = req.body; // 'verified' or 'rejected'
+    const { status } = req.body;
 
     if (!['verified', 'rejected'].includes(status)) {
       return res.status(400).json({ error: 'Status must be verified or rejected' });
@@ -171,7 +86,6 @@ router.patch('/:claimId', verifyToken, async (req, res) => {
 
     const claim = claimDoc.data();
 
-    // Update claim status
     await db.collection('claims').doc(claimId).update({
       status,
       processedBy: req.user.uid,
@@ -179,36 +93,21 @@ router.patch('/:claimId', verifyToken, async (req, res) => {
     });
 
     if (status === 'verified') {
-      // Mark lost item as recovered
-      await db.collection('lostItems').doc(claim.lostItemId).update({
-        status: 'recovered',
-      });
+      await db.collection('lostItems').doc(claim.lostItemId).update({ status: 'recovered' });
+      await db.collection('foundItems').doc(claim.foundItemId).update({ status: 'recovered' });
 
-      // Mark found item as recovered
-      await db.collection('foundItems').doc(claim.foundItemId).update({
-        status: 'recovered',
-      });
-
-      const foundItemDoc = await db
-        .collection('foundItems')
-        .doc(claim.foundItemId)
-        .get();
-
+      const foundItemDoc = await db.collection('foundItems').doc(claim.foundItemId).get();
       if (foundItemDoc.exists) {
         const finderId = foundItemDoc.data()?.userId;
         if (finderId) {
           const finderRef = db.collection('users').doc(finderId);
           const finderDoc = await finderRef.get();
           const currentCount = finderDoc.data()?.recoveredCount || 0;
-          await finderRef.update({
-            recoveredCount: currentCount + 1,
-          });
+          await finderRef.update({ recoveredCount: currentCount + 1 });
           console.log('Updated recovered count to:', currentCount + 1);
         }
       }
 
-
-      // Notify the claimant
       await db.collection('notifications').add({
         userId: claim.claimantId,
         type: 'claim_verified',
@@ -218,22 +117,44 @@ router.patch('/:claimId', verifyToken, async (req, res) => {
         createdAt: new Date().toISOString(),
       });
 
-      // After verified notification
       await sendPushNotification(claim.claimantId, {
         title: '🎉 Claim Verified!',
         body: 'Your ownership has been verified. Visit the office to collect your item.',
         type: 'claim_verified',
         url: '/dashboard',
       });
+
+      // Reject all other pending claims on the same found item
+      const otherClaims = await db
+        .collection('claims')
+        .where('foundItemId', '==', claim.foundItemId)
+        .where('status', '==', 'pending')
+        .get();
+
+      await Promise.all(
+        otherClaims.docs
+          .filter((doc) => doc.id !== claimId)
+          .map(async (doc) => {
+            await doc.ref.update({ status: 'rejected' });
+            const claimData = doc.data();
+            if (claimData.matchId) {
+              await db.collection('matches').doc(claimData.matchId).update({ status: 'rejected' });
+            }
+            await db.collection('notifications').add({
+              userId: claimData.claimantId,
+              type: 'claim_rejected',
+              message: 'Another claimant was verified as the owner of the found item you claimed. We will keep looking for your lost item.',
+              claimId: doc.id,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+            });
+          })
+      );
     }
 
     if (status === 'rejected') {
-      // Revert items back to active
-      await db.collection('lostItems').doc(claim.lostItemId).update({
-        status: 'active',
-      });
+      await db.collection('lostItems').doc(claim.lostItemId).update({ status: 'active' });
 
-      // Notify the claimant
       await db.collection('notifications').add({
         userId: claim.claimantId,
         type: 'claim_rejected',
@@ -248,67 +169,6 @@ router.patch('/:claimId', verifyToken, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not process claim' });
-  }
-});
-// GET /api/claims/match/:lostItemId — get approved match for a lost item
-router.get('/match/:lostItemId', verifyToken, async (req, res) => {
-  try {
-    const { lostItemId } = req.params;
-
-    const matchSnapshot = await db
-      .collection('matches')
-      .where('lostItemId', '==', lostItemId)
-      .where('status', 'in', ['approved', 'auto_approved'])
-      .get();
-
-    if (matchSnapshot.empty) {
-      return res.status(404).json({ error: 'No approved match found' });
-    }
-
-    const matchDoc = matchSnapshot.docs[0];
-    res.json({ id: matchDoc.id, ...matchDoc.data() });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not fetch match' });
-  }
-});
-
-// GET /api/claims/match-by-found/:foundItemId
-router.get('/match-by-found/:foundItemId', verifyToken, async (req, res) => {
-  try {
-    const { foundItemId } = req.params;
-
-    // Check the found item doesn't belong to the requesting user
-    const foundItemDoc = await db.collection('foundItems').doc(foundItemId).get();
-    if (!foundItemDoc.exists) {
-      return res.status(404).json({ error: 'Found item not found.' });
-    }
-    if (foundItemDoc.data().userId === req.user.uid) {
-      return res.status(403).json({ error: 'You cannot claim an item you reported as found.' });
-    }
-
-    const matchSnapshot = await db
-      .collection('matches')
-      .where('foundItemId', '==', foundItemId)
-      .where('status', 'in', ['approved', 'auto_approved'])
-      .get();
-
-    if (matchSnapshot.empty) {
-      return res.status(404).json({ error: 'No approved match found' });
-    }
-
-    const matchDoc = matchSnapshot.docs.find(
-      (doc) => doc.data().lostUserId === req.user.uid
-    );
-
-    if (!matchDoc) {
-      return res.status(403).json({ error: 'No match found for your lost item' });
-    }
-
-    res.json({ id: matchDoc.id, ...matchDoc.data() });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not fetch match' });
   }
 });
 
@@ -331,4 +191,119 @@ router.get('/my-matches', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Could not fetch matches' });
   }
 });
+
+// POST /api/claims/manual — user manually claims a found item
+router.post('/manual', verifyToken, async (req, res) => {
+  try {
+    const { foundItemId, lostItemId, verificationDetails } = req.body;
+
+    if (!foundItemId || !lostItemId || !verificationDetails) {
+      return res.status(400).json({ error: 'All fields are required.' });
+    }
+
+    if (verificationDetails.trim().length < 20) {
+      return res.status(400).json({ error: 'Verification details must be at least 20 characters.' });
+    }
+
+    const foundItemDoc = await db.collection('foundItems').doc(foundItemId).get();
+    if (!foundItemDoc.exists) {
+      return res.status(404).json({ error: 'Found item not found.' });
+    }
+    if (foundItemDoc.data().userId === req.user.uid) {
+      return res.status(403).json({ error: 'You cannot claim an item you reported as found.' });
+    }
+
+    const lostItemDoc = await db.collection('lostItems').doc(lostItemId).get();
+    if (!lostItemDoc.exists) {
+      return res.status(404).json({ error: 'Lost item not found.' });
+    }
+    if (lostItemDoc.data().userId !== req.user.uid) {
+      return res.status(403).json({ error: 'You can only claim using your own lost item reports.' });
+    }
+
+    const existingActiveMatch = await db
+      .collection('matches')
+      .where('foundItemId', '==', foundItemId)
+      .where('status', 'in', ['approved', 'auto_approved', 'pending'])
+      .get();
+
+    if (!existingActiveMatch.empty) {
+      return res.status(409).json({
+        error: 'This item already has an active or approved match and cannot be claimed right now.',
+      });
+    }
+
+    const existingClaim = await db
+      .collection('claims')
+      .where('foundItemId', '==', foundItemId)
+      .where('claimantId', '==', req.user.uid)
+      .where('status', '==', 'pending')
+      .get();
+
+    if (!existingClaim.empty) {
+      return res.status(400).json({ error: 'You have already submitted a claim for this item.' });
+    }
+
+    const lostItem = { id: lostItemDoc.id, ...lostItemDoc.data() };
+    const foundItem = { id: foundItemDoc.id, ...foundItemDoc.data() };
+
+    let combinedScore = 0;
+    if (lostItem.imageEmbedding && foundItem.imageEmbedding) {
+      const { computeScore } = require('../services/matchingService');
+      combinedScore = computeScore(lostItem, foundItem);
+    }
+
+    const foundUserId = foundItemDoc.data().userId;
+
+    const matchRef = await db.collection('matches').add({
+      lostItemId,
+      foundItemId,
+      lostUserId: req.user.uid,
+      foundUserId,
+      combinedScore,
+      status: 'pending',
+      source: 'manual_claim',
+      notifiedUser: req.user.uid,
+      createdAt: new Date().toISOString(),
+    });
+
+    const claimRef = await db.collection('claims').add({
+      matchId: matchRef.id,
+      lostItemId,
+      foundItemId,
+      claimantId: req.user.uid,
+      claimantEmail: req.user.email,
+      verificationDetails: verificationDetails.trim(),
+      status: 'pending',
+      source: 'manual_claim',
+      createdAt: new Date().toISOString(),
+    });
+
+    const adminsSnapshot = await db.collection('users').where('role', '==', 'admin').get();
+    await Promise.all(
+      adminsSnapshot.docs.map((adminDoc) =>
+        db.collection('notifications').add({
+          userId: adminDoc.id,
+          type: 'manual_claim_submitted',
+          message: `A user has manually claimed a found item. AI similarity score: ${Math.round(combinedScore * 100)}%. Review required.`,
+          claimId: claimRef.id,
+          matchId: matchRef.id,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        })
+      )
+    );
+
+    res.status(201).json({
+      message: 'Claim submitted successfully. An admin will review it shortly.',
+      claimId: claimRef.id,
+      matchId: matchRef.id,
+      aiScore: Math.round(combinedScore * 100),
+    });
+  } catch (err) {
+    console.error('Manual claim error:', err);
+    res.status(500).json({ error: 'Could not submit claim.' });
+  }
+});
+
 module.exports = router;

@@ -10,7 +10,6 @@ import ReportLostItem from './pages/ReportLostItem/ReportLostItem';
 import ReportFoundItem from './pages/ReportFoundItem/ReportFoundItem';
 import Listings from './pages/Listings/Listings';
 import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
-import ClaimItem from './pages/ClaimItem/ClaimItem';
 import Chat from './pages/Chat/Chat';
 import MyChats from './pages/MyChats/MyChats';
 import AppLayout from './components/AppLayout/AppLayout';
@@ -60,11 +59,6 @@ export default function App() {
                 <AppLayout> <AdminDashboard /> </AppLayout>
               </ProtectedRoute>
             } />
-            <Route path="/claim" element={
-              <ProtectedRoute>
-                <AppLayout> <ClaimItem /> </AppLayout>
-              </ProtectedRoute>
-            } />
             <Route path="/chat/:chatId" element={
               <ProtectedRoute>
                 <AppLayout> <Chat /> </AppLayout>
@@ -75,7 +69,7 @@ export default function App() {
                 <AppLayout> <MyChats /> </AppLayout>
               </ProtectedRoute>
             } />
-            <Route path='*' element={<NotFound></NotFound>}></Route>
+            <Route path='*' element={<NotFound />} />
           </Routes>
         </AuthProvider>
       </ThemeProvider>

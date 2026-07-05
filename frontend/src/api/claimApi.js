@@ -8,23 +8,6 @@ async function getToken() {
   return user.getIdToken();
 }
 
-export async function submitClaim(claimData) {
-  const token = await getToken();
-  const res = await fetch(`${BACKEND_URL}/api/claims`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(claimData),
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Could not submit claim');
-  }
-  return res.json();
-}
-
 export async function getMyClaims() {
   const token = await getToken();
   const res = await fetch(`${BACKEND_URL}/api/claims/my`, {
@@ -57,26 +40,6 @@ export async function processClaim(claimId, status) {
   return res.json();
 }
 
-export async function getMatchForLostItem(lostItemId) {
-  const token = await getToken();
-  const res = await fetch(
-    `${BACKEND_URL}/api/claims/match/${lostItemId}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!res.ok) throw new Error('Could not fetch match');
-  return res.json();
-}
-
-export async function getMatchForFoundItem(foundItemId) {
-  const token = await getToken();
-  const res = await fetch(
-    `${BACKEND_URL}/api/claims/match-by-found/${foundItemId}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!res.ok) throw new Error('Could not fetch match');
-  return res.json();
-}
-
 export async function getMyMatches() {
   const token = await getToken();
   const res = await fetch(`${BACKEND_URL}/api/claims/my-matches`, {
@@ -84,5 +47,20 @@ export async function getMyMatches() {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Could not fetch matches');
+  return data;
+}
+
+export async function submitManualClaim({ foundItemId, lostItemId, verificationDetails }) {
+  const token = await getToken();
+  const res = await fetch(`${BACKEND_URL}/api/claims/manual`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ foundItemId, lostItemId, verificationDetails }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Could not submit claim');
   return data;
 }
