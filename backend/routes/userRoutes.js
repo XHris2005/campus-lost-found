@@ -3,6 +3,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const { db, admin } = require('../config/firebase');
 const { verifyToken } = require('../middleware/authMiddleware');
+const { sendBusinessOwnerApproved, sendBusinessOwnerRejected } = require('../services/emailService');
 
 // DELETE /api/users/me — delete own account
 router.delete('/me', verifyToken, async (req, res) => {
@@ -272,6 +273,161 @@ router.get('/lookup-lecturer/:idOrEmail', async (req, res) => {
   } catch (err) {
     console.error('Lecturer lookup error:', err);
     res.status(500).json({ error: 'Could not look up lecturer account.' });
+  }
+});
+
+// ─── BUSINESS OWNER ROUTES ──────────────────────────────────────────────────
+
+const businessRegisterLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many registration attempts. Please try again later.' },
+});
+
+// Helper — generate next Business ID (BIZ-YYYY-XXXX), same pattern as Lecturer IDs
+async function generateBusinessId() {
+  const year = new Date().getFullYear();
+  const prefix = `BIZ-${year}-`;
+
+  const snapshot = await db
+    .collection('users')
+    .where('role', '==', 'business_owner')
+    .get();
+
+  let maxSeq = 0;
+  snapshot.docs.forEach((doc) => {
+    const id = doc.data().bizId || '';
+    if (id.startsWith(prefix)) {
+      const seq = parseInt(id.replace(prefix, ''), 10);
+      if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+    }
+  });
+
+  const nextSeq = String(maxSeq + 1).padStart(4, '0');
+  return `${prefix}${nextSeq}`;
+}
+
+// POST /api/users/register-business
+router.post('/register-business', businessRegisterLimiter, async (req, res) => {
+  try {
+    const { name, businessName, location, phone, email, password } = req.body;
+
+    if (!name || !businessName || !location || !phone || !email || !password) {
+      return res.status(400).json({ error: 'All fields are required.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    }
+
+    // Check if email already registered
+    try {
+      await admin.auth().getUserByEmail(email);
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    } catch (err) {
+      if (err.code !== 'auth/user-not-found') throw err;
+    }
+
+    const bizId = await generateBusinessId();
+
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      displayName: name,
+    });
+
+    await db.collection('users').doc(userRecord.uid).set({
+      uid: userRecord.uid,
+      displayName: name,
+      businessName,
+      location,
+      phone,
+      email,
+      bizId,
+      role: 'business_owner',
+      status: 'pending', // pending | approved | rejected
+      recoveredCount: 0,
+      createdAt: new Date().toISOString(),
+    });
+
+    res.status(201).json({
+      message: 'Registration submitted. Your account is pending admin approval.',
+      bizId,
+      uid: userRecord.uid,
+    });
+  } catch (err) {
+    console.error('Business registration error:', err);
+    res.status(500).json({ error: 'Could not create business account.' });
+  }
+});
+
+// GET /api/users/pending-business — admin only
+router.get('/pending-business', verifyToken, async (req, res) => {
+  try {
+    const requester = await db.collection('users').doc(req.user.uid).get();
+    if (requester.data()?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required.' });
+    }
+
+    const snapshot = await db
+      .collection('users')
+      .where('role', '==', 'business_owner')
+      .where('status', '==', 'pending')
+      .get();
+
+    const pending = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(pending);
+  } catch (err) {
+    console.error('Fetching pending business owners error:', err);
+    res.status(500).json({ error: 'Could not load pending accounts.' });
+  }
+});
+
+// PATCH /api/users/approve-business/:uid — admin only
+router.patch('/approve-business/:uid', verifyToken, async (req, res) => {
+  try {
+    const requester = await db.collection('users').doc(req.user.uid).get();
+    if (requester.data()?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required.' });
+    }
+
+    const { action, reason } = req.body; // 'approve' | 'reject'
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action.' });
+    }
+
+    const targetRef = db.collection('users').doc(req.params.uid);
+    const targetDoc = await targetRef.get();
+
+    if (!targetDoc.exists || targetDoc.data().role !== 'business_owner') {
+      return res.status(404).json({ error: 'Business owner not found.' });
+    }
+
+    const data = targetDoc.data();
+    const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    await targetRef.update({ status: newStatus });
+
+    if (action === 'approve') {
+      await sendBusinessOwnerApproved({
+        to: data.email,
+        name: data.displayName,
+        businessName: data.businessName,
+        bizId: data.bizId,
+      });
+    } else {
+      await sendBusinessOwnerRejected({
+        to: data.email,
+        name: data.displayName,
+        businessName: data.businessName,
+        reason,
+      });
+      await admin.auth().updateUser(req.params.uid, { disabled: true });
+    }
+
+    res.json({ message: `Business owner ${newStatus}.` });
+  } catch (err) {
+    console.error('Processing business approval error:', err);
+    res.status(500).json({ error: 'Could not process request.' });
   }
 });
 
