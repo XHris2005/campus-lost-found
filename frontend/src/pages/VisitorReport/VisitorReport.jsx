@@ -324,7 +324,6 @@ export default function VisitorReport() {
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       onChange={handleImage}
                       hidden
                     />

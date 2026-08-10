@@ -6,7 +6,7 @@ import {
   FiSearch, FiPackage, FiCpu, FiBell, FiShield,
   FiMessageSquare, FiUsers, FiSmartphone, FiSun,
   FiMoon, FiArrowRight, FiCheckCircle, FiMapPin,
-  FiClock, FiStar,
+  FiClock, FiStar, FiUser,
 } from 'react-icons/fi';
 import Logo from '../../components/Logo/Logo';
 import './Home.css';
@@ -128,6 +128,13 @@ export default function Home() {
               Report Found Item
             </button>
           </div>
+          <button
+            className="btn btn-ghost btn-lg hero-visitor-btn"
+            onClick={() => navigate('/visitor/report')}
+          >
+            <FiUser size={18} />
+            Report as Visitor
+          </button>
           <div className="hero-stats">
             <div className="hero-stat">
               <FiCpu className="stat-icon" />

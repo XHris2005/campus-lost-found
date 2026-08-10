@@ -208,7 +208,6 @@ export default function ReportFoundItem() {
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     onChange={handleImage}
                     hidden
                   />

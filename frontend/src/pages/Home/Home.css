@@ -174,6 +174,9 @@
   margin-bottom: 3rem;
   flex-wrap: wrap;
 }
+.hero-visitor-btn {
+  display: none;
+}
 
 .hero-stats {
   display: flex;
@@ -186,6 +189,7 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  margin-top: 3rem;
 }
 
 .stat-icon {
@@ -482,11 +486,6 @@
   transform: translateY(-2px);
 }
 
-
-
-.hero-visitor-link:hover {
-  opacity: 0.85;
-}
 /* ============================================
    FOOTER
    ============================================ */
@@ -560,12 +559,14 @@
   .home-nav-actions .btn-ghost { display: none; }
   .features-grid { grid-template-columns: 1fr; }
   .footer-content { flex-direction: column; text-align: center; }
+  .hero-visitor-btn { display: inline-flex; margin-top: -1.5rem; margin-bottom: 3rem; }
 }
 
 @media (max-width: 480px) {
   .home-nav-inner { border-radius: 12px; margin-top: 8px; }
   .hero-actions { flex-direction: column; }
   .hero-actions .btn { width: 100%; }
+  .hero-visitor-btn { width: 100%; }
 }
 
 @media (max-width: 400px) {
