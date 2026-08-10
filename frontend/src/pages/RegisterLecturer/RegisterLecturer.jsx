@@ -238,6 +238,10 @@ export default function RegisterLecturer() {
             Student?{' '}
             <Link to="/register">Student registration</Link>
           </p>
+          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
+            Own a business?{' '}
+            <Link to="/register-business">Business registration</Link>
+          </p>
         </div>
       </div>
     </div>

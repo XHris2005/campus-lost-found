@@ -19,6 +19,10 @@ import VerifyEmail from './pages/VerifyEmail/VerifyEmail';
 import AdminLogin from './pages/AdminLogin/AdminLogin';
 import LecturerLogin from './pages/LecturerLogin/LecturerLogin';
 import RegisterLecturer from './pages/RegisterLecturer/RegisterLecturer';
+import RegisterBusiness from './pages/RegisterBusiness/RegisterBusiness';
+import BusinessLogin from './pages/BusinessLogin/BusinessLogin';
+import VisitorReport from './pages/VisitorReport/VisitorReport';
+import VisitorTrack from './pages/VisitorTrack/VisitorTrack';
 
 export default function App() {
   return (
@@ -31,7 +35,11 @@ export default function App() {
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/register" element={<Register />} />
             <Route path="/register-lecturer" element={<RegisterLecturer />} />
+            <Route path="/register-business" element={<RegisterBusiness />} />
             <Route path="/lecturer-login" element={<LecturerLogin />} />
+            <Route path="/business-login" element={<BusinessLogin />} />
+            <Route path="/visitor/report" element={<VisitorReport />} />
+            <Route path="/visitor/track/:token" element={<VisitorTrack />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/dashboard" element={

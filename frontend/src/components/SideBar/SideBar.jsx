@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import {
   FiSearch, FiHome, FiList,
   FiMessageSquare, FiShield, FiLogOut,
-  FiPackage, FiCheckCircle, FiUsers,
+  FiPackage, FiCheckCircle, FiUsers, FiBriefcase,
 } from 'react-icons/fi';
 import Logo from '../Logo/Logo';
 import './SideBar.css';
@@ -19,6 +19,7 @@ const ADMIN_TABS = [
   { key: 'reviewed', label: 'Reviewed', icon: <FiCheckCircle size={20} /> },
   { key: 'claims', label: 'Claims', icon: <FiPackage size={20} /> },
   { key: 'chats', label: 'Chats', icon: <FiMessageSquare size={20} /> },
+  { key: 'business', label: 'Business Owners', icon: <FiBriefcase size={20} /> },
   { key: 'users', label: 'Users', icon: <FiUsers size={20} /> },
 ];
 

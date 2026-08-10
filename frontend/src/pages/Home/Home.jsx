@@ -83,6 +83,9 @@ export default function Home() {
       <button className="theme-toggle" onClick={toggleTheme}>
         {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
       </button>
+      <button className="btn btn-ghost home-nav-visitor" onClick={() => navigate('/visitor/report')}>
+        Report as Visitor
+      </button>
       <button className="btn btn-ghost home-nav-login" onClick={() => navigate('/login')}>
         Login
       </button>

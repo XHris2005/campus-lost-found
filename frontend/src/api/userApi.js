@@ -70,3 +70,18 @@ export async function lookupLecturerEmail(idOrEmail) {
   if (!res.ok) throw new Error(data.error || 'Could not find lecturer account');
   return data;
 }
+
+// Business owner registration — called server-side since Firebase Auth user
+// is created via Admin SDK (not client SDK) to allow returning the bizId.
+// Account is created with status: 'pending' — no sign-in happens client-side;
+// access is gated on admin approval instead.
+export async function registerBusiness({ name, businessName, location, phone, email, password }) {
+  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/register-business`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, businessName, location, phone, email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Could not create business account');
+  return data;
+}

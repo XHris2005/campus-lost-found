@@ -234,6 +234,10 @@ export default function LecturerLogin() {
             <Link to="/login">Student login</Link>
           </p>
           <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
+            Business owner?{' '}
+            <Link to="/business-login">Business login</Link>
+          </p>
+          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
             Administrator?{' '}
             <Link to="/admin-login">Admin login</Link>
           </p>

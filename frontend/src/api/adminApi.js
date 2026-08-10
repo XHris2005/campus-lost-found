@@ -48,3 +48,26 @@ export async function getUsers() {
   if (!res.ok) throw new Error('Could not fetch users');
   return res.json();
 }
+
+export async function getPendingBusinessOwners() {
+  const token = await getToken();
+  const res = await fetch(`${BACKEND_URL}/api/users/pending-business`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Could not fetch pending business owners');
+  return res.json();
+}
+
+export async function processBusinessApproval(uid, action, reason) {
+  const token = await getToken();
+  const res = await fetch(`${BACKEND_URL}/api/users/approve-business/${uid}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action, reason }),
+  });
+  if (!res.ok) throw new Error('Could not process business approval');
+  return res.json();
+}

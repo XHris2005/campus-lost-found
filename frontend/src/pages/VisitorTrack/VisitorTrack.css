@@ -1,0 +1,50 @@
+.visitor-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.visitor-status-pending {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.visitor-status-matched {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.visitor-page-wrap .listings-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.visitor-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.visitor-theme-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.visitor-theme-btn:hover {
+  background: var(--bg-tertiary);
+}

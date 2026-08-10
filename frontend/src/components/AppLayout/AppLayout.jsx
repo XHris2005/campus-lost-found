@@ -12,6 +12,7 @@ export default function AppLayout({ children, tabCounts = {} }) {
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        tabCounts={tabCounts}
       />
 
       {/* Mobile overlay */}

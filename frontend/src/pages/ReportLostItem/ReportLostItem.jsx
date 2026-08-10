@@ -215,11 +215,12 @@ export default function ReportLostItem() {
                   <input
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={handleImage}
                     hidden
                   />
                   <FiImage size={28} className="upload-icon" />
-                  <span className="upload-title">Click to upload a photo</span>
+                  <span className="upload-title">Take a photo or upload from gallery</span>
                   <span className="upload-hint">
                     PNG, JPG up to 5MB — better photos improve AI matching accuracy
                   </span>

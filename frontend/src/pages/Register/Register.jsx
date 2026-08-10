@@ -265,6 +265,11 @@ export default function Register() {
   <Link to="/register-lecturer">Lecturer registration</Link>
 </p>
 
+          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
+  Own a business?{' '}
+  <Link to="/register-business">Business registration</Link>
+</p>
+
           <p className="auth-switch">
             Already have an account?{' '}
             <Link to="/login">Sign in here</Link>

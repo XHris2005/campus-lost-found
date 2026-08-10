@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { getMatches, updateMatchStatus, getStats, getUsers } from '../../api/adminApi';
+import { getMatches, updateMatchStatus, getStats, getUsers, getPendingBusinessOwners, processBusinessApproval } from '../../api/adminApi';
 import { getAllClaims, processClaim } from '../../api/claimApi';
 import { getAllChats } from '../../api/chatApi';
 import AdminMatchCard from '../../components/AdminMatchCard/AdminMatchCard';
@@ -8,7 +8,7 @@ import ClaimCard from '../../components/ClaimCard/ClaimCard';;
 import { getBadge } from '../../utils/badges';
 import {
   FiSearch, FiPackage, FiClock, FiCheckCircle,
-  FiXCircle, FiUsers, FiMessageSquare,
+  FiXCircle, FiUsers, FiMessageSquare, FiBriefcase,
 } from 'react-icons/fi';
 import { useSearchParams } from 'react-router-dom';
 import './AdminDashboard.css';
@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [claims, setClaims] = useState([]);
   const [adminChats, setAdminChats] = useState([]);
+  const [businessOwners, setBusinessOwners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,19 +36,21 @@ export default function AdminDashboard() {
     setLoading(true);
     setError('');
     try {
-      const [matchesData, statsData, usersData, claimsData, chatsData] =
+      const [matchesData, statsData, usersData, claimsData, chatsData, businessData] =
         await Promise.all([
           getMatches(),
           getStats(),
           getUsers(),
           getAllClaims(),
           getAllChats(),
+          getPendingBusinessOwners(),
         ]);
       setMatches(matchesData);
       setStats(statsData);
       setUsers(usersData);
       setClaims(claimsData);
       setAdminChats(chatsData);
+      setBusinessOwners(businessData);
     } catch (err) {
       setError('Could not load admin data. Please try again.');
     }
@@ -110,6 +113,32 @@ export default function AdminDashboard() {
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err) {
       setError('Could not reject claim.');
+    }
+    setActionLoading(false);
+  }
+
+  async function handleApproveBusiness(uid) {
+    setActionLoading(true);
+    try {
+      await processBusinessApproval(uid, 'approve');
+      setSuccessMsg('Business owner approved and notified!');
+      setBusinessOwners(prev => prev.filter(b => b.id !== uid));
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      setError('Could not approve business owner.');
+    }
+    setActionLoading(false);
+  }
+
+  async function handleRejectBusiness(uid) {
+    setActionLoading(true);
+    try {
+      await processBusinessApproval(uid, 'reject');
+      setSuccessMsg('Business owner rejected.');
+      setBusinessOwners(prev => prev.filter(b => b.id !== uid));
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      setError('Could not reject business owner.');
     }
     setActionLoading(false);
   }
@@ -334,6 +363,57 @@ export default function AdminDashboard() {
     )}
   </>
 )}
+
+          {/* Pending Business Owners */}
+          {activeTab === 'business' && (
+            <>
+              {businessOwners.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🏪</div>
+                  <h3>No pending business accounts</h3>
+                  <p>New business owner registrations will appear here</p>
+                </div>
+              ) : (
+                businessOwners.map(biz => (
+                  <div key={biz.id} className="admin-chat-card card">
+                    <div className="admin-chat-header">
+                      <div className="admin-chat-img">
+                        <FiBriefcase size={20} />
+                      </div>
+                      <div className="admin-chat-info">
+                        <div className="admin-chat-title-row">
+                          <h3 className="admin-chat-title">{biz.businessName}</h3>
+                          <span className="badge badge-warning">{biz.bizId}</span>
+                        </div>
+                        <div className="admin-chat-meta">
+                          <span>Owner: {biz.displayName}</span>
+                          <span>Location: {biz.location}</span>
+                          <span>Phone: {biz.phone}</span>
+                          <span>Email: {biz.email}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          disabled={actionLoading}
+                          onClick={() => handleApproveBusiness(biz.id)}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={actionLoading}
+                          onClick={() => handleRejectBusiness(biz.id)}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </>
+          )}
 
           {/* Users */}
           {activeTab === 'users' && (

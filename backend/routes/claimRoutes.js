@@ -1,9 +1,25 @@
 const { sendPushNotification } = require('../services/notificationService');
+const { sendVisitorClaimUpdate } = require('../services/emailService');
 const express = require('express');
 const router = express.Router();
 const { db } = require('../config/firebase');
 const { verifyToken } = require('../middleware/authMiddleware');
 const sanitize = require('../utils/sanitize');
+
+// Visitor claimant identities are derived UIDs in the form `visitor_<token>`
+// (same pattern used for visitor chat access) — these two helpers let the
+// existing admin approval flow recognize and email them, since they have
+// no in-app inbox or push token to reach them through.
+function isVisitorClaimant(uid) {
+  return typeof uid === 'string' && uid.startsWith('visitor_');
+}
+function tokenFromVisitorId(uid) {
+  return uid.replace('visitor_', '');
+}
+async function getVisitorContactByToken(token) {
+  const reportDoc = await db.collection('visitorReports').doc(token).get();
+  return reportDoc.exists ? reportDoc.data() : null;
+}
 
 // GET /api/claims/my — get current user's claims
 router.get('/my', verifyToken, async (req, res) => {
@@ -108,21 +124,36 @@ router.patch('/:claimId', verifyToken, async (req, res) => {
         }
       }
 
-      await db.collection('notifications').add({
-        userId: claim.claimantId,
-        type: 'claim_verified',
-        message: 'Your claim has been verified! Please visit the Lost & Found office with your ID to collect your item.',
-        claimId,
-        isRead: false,
-        createdAt: new Date().toISOString(),
-      });
+      if (isVisitorClaimant(claim.claimantId)) {
+        const token = tokenFromVisitorId(claim.claimantId);
+        const visitorContact = await getVisitorContactByToken(token);
+        if (visitorContact) {
+          const lostItemDoc = await db.collection('lostItems').doc(claim.lostItemId).get();
+          await sendVisitorClaimUpdate({
+            to: visitorContact.visitorEmail,
+            name: visitorContact.visitorName,
+            itemName: lostItemDoc.data()?.name || 'your item',
+            status: 'verified',
+            token,
+          });
+        }
+      } else {
+        await db.collection('notifications').add({
+          userId: claim.claimantId,
+          type: 'claim_verified',
+          message: 'Your claim has been verified! Please visit the Lost & Found office with your ID to collect your item.',
+          claimId,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        });
 
-      await sendPushNotification(claim.claimantId, {
-        title: '🎉 Claim Verified!',
-        body: 'Your ownership has been verified. Visit the office to collect your item.',
-        type: 'claim_verified',
-        url: '/dashboard',
-      });
+        await sendPushNotification(claim.claimantId, {
+          title: '🎉 Claim Verified!',
+          body: 'Your ownership has been verified. Visit the office to collect your item.',
+          type: 'claim_verified',
+          url: '/dashboard',
+        });
+      }
 
       // Reject all other pending claims on the same found item
       const otherClaims = await db
@@ -140,14 +171,30 @@ router.patch('/:claimId', verifyToken, async (req, res) => {
             if (claimData.matchId) {
               await db.collection('matches').doc(claimData.matchId).update({ status: 'rejected' });
             }
-            await db.collection('notifications').add({
-              userId: claimData.claimantId,
-              type: 'claim_rejected',
-              message: 'Another claimant was verified as the owner of the found item you claimed. We will keep looking for your lost item.',
-              claimId: doc.id,
-              isRead: false,
-              createdAt: new Date().toISOString(),
-            });
+
+            if (isVisitorClaimant(claimData.claimantId)) {
+              const otherToken = tokenFromVisitorId(claimData.claimantId);
+              const otherContact = await getVisitorContactByToken(otherToken);
+              if (otherContact) {
+                const lostItemDoc = await db.collection('lostItems').doc(claimData.lostItemId).get();
+                await sendVisitorClaimUpdate({
+                  to: otherContact.visitorEmail,
+                  name: otherContact.visitorName,
+                  itemName: lostItemDoc.data()?.name || 'your item',
+                  status: 'rejected',
+                  token: otherToken,
+                });
+              }
+            } else {
+              await db.collection('notifications').add({
+                userId: claimData.claimantId,
+                type: 'claim_rejected',
+                message: 'Another claimant was verified as the owner of the found item you claimed. We will keep looking for your lost item.',
+                claimId: doc.id,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+              });
+            }
           })
       );
     }
@@ -155,14 +202,29 @@ router.patch('/:claimId', verifyToken, async (req, res) => {
     if (status === 'rejected') {
       await db.collection('lostItems').doc(claim.lostItemId).update({ status: 'active' });
 
-      await db.collection('notifications').add({
-        userId: claim.claimantId,
-        type: 'claim_rejected',
-        message: 'Your claim could not be verified. Please contact the Lost & Found office for assistance.',
-        claimId,
-        isRead: false,
-        createdAt: new Date().toISOString(),
-      });
+      if (isVisitorClaimant(claim.claimantId)) {
+        const token = tokenFromVisitorId(claim.claimantId);
+        const visitorContact = await getVisitorContactByToken(token);
+        if (visitorContact) {
+          const lostItemDoc = await db.collection('lostItems').doc(claim.lostItemId).get();
+          await sendVisitorClaimUpdate({
+            to: visitorContact.visitorEmail,
+            name: visitorContact.visitorName,
+            itemName: lostItemDoc.data()?.name || 'your item',
+            status: 'rejected',
+            token,
+          });
+        }
+      } else {
+        await db.collection('notifications').add({
+          userId: claim.claimantId,
+          type: 'claim_rejected',
+          message: 'Your claim could not be verified. Please contact the Lost & Found office for assistance.',
+          claimId,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
 
     res.json({ message: `Claim ${status} successfully` });

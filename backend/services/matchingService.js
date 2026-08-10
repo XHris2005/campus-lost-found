@@ -1,5 +1,6 @@
 const { sendPushNotification } = require('./notificationService');
-const { db } = require('../config/firebase');
+const { sendVisitorMatchFound } = require('./emailService');
+const { db, admin } = require('../config/firebase');
 const { generateItemEmbeddings } = require('./embeddingService');
 
 const SIMILARITY_THRESHOLD = 0.70;
@@ -50,6 +51,35 @@ function computeCombinedScore(itemA, itemB) {
   const weightedSum = scores.reduce((sum, score, i) => sum + score * weights[i], 0);
 
   return weightedSum / totalWeight;
+}
+
+// Looks up the visitorReports doc for a given item, if the item was
+// reported by a visitor.
+async function getVisitorReportForItem(itemId) {
+  const snapshot = await db.collection('visitorReports')
+    .where('itemId', '==', itemId)
+    .limit(1)
+    .get();
+  if (snapshot.empty) return null;
+  const doc = snapshot.docs[0];
+  return { token: doc.id, ...doc.data() };
+}
+
+// Ensures a lightweight users doc exists for a visitor's derived identity,
+// so chatRoutes.js and Firestore rules treat them like any other account.
+// Returns the derived UID.
+async function ensureVisitorIdentity(visitorReport) {
+  if (!visitorReport) return null;
+  const uid = `visitor_${visitorReport.token}`;
+  await db.collection('users').doc(uid).set({
+    uid,
+    displayName: visitorReport.visitorName,
+    role: 'visitor',
+    recoveredCount: 0,
+    isVisitor: true,
+    createdAt: new Date().toISOString(),
+  }, { merge: true });
+  return uid;
 }
 
 // Shared function — used by both auto-approval here and admin approval in adminRoutes.js
@@ -183,8 +213,23 @@ async function runMatching(newItemId, newItemType) {
     for (const match of matches) {
       const lostItemId = newItemType === 'lost' ? newItemId : match.item.id;
       const foundItemId = newItemType === 'found' ? newItemId : match.item.id;
-      const lostUserId = newItemType === 'lost' ? newItem.userId : match.item.userId;
-      const foundUserId = newItemType === 'found' ? newItem.userId : match.item.userId;
+      const lostItem = newItemType === 'lost' ? newItem : match.item;
+      const foundItem = newItemType === 'found' ? newItem : match.item;
+
+      const lostIsVisitor = lostItem.reporterType === 'visitor';
+      const foundIsVisitor = foundItem.reporterType === 'visitor';
+
+      const lostVisitor = lostIsVisitor ? await getVisitorReportForItem(lostItemId) : null;
+      const foundVisitor = foundIsVisitor ? await getVisitorReportForItem(foundItemId) : null;
+
+      // Visitors now get a real (lightweight) identity instead of null,
+      // so chat creation works the same way it does for registered users.
+      const lostUserId = lostIsVisitor
+        ? await ensureVisitorIdentity(lostVisitor)
+        : (lostItem.userId || null);
+      const foundUserId = foundIsVisitor
+        ? await ensureVisitorIdentity(foundVisitor)
+        : (foundItem.userId || null);
 
       const isAutoApproved = match.score >= AUTO_APPROVE_THRESHOLD;
       const matchStatus = isAutoApproved ? 'auto_approved' : 'pending';
@@ -197,7 +242,6 @@ async function runMatching(newItemId, newItemType) {
 
       if (!existingMatch.empty) continue;
 
-      // Save match doc
       const matchRef = await db.collection('matches').add({
         lostItemId,
         foundItemId,
@@ -213,67 +257,103 @@ async function runMatching(newItemId, newItemType) {
       console.log(`Match saved! Score: ${match.score.toFixed(3)}, Status: ${matchStatus}`);
 
       if (isAutoApproved) {
-        // Update item statuses to matched immediately
         await db.collection('lostItems').doc(lostItemId).update({ status: 'matched' });
         await db.collection('foundItems').doc(foundItemId).update({ status: 'matched' });
 
-        // Create chat room immediately
+        // Chat now creates successfully even when one or both sides are
+        // visitors, since they have a real (derived) userId above.
         await createChatForMatch(matchRef.id, lostItemId, foundItemId, lostUserId, foundUserId);
 
-        // Notify lost item owner
-        await db.collection('notifications').add({
-          userId: lostUserId,
-          type: 'match_auto_approved',
-          message: `Great news! We're confident your lost item has been found (${Math.round(match.score * 100)}% match). A chat room has been created — tap to connect with the finder.`,
-          lostItemId,
-          foundItemId,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        });
+        if (lostIsVisitor) {
+          if (lostVisitor) {
+            await sendVisitorMatchFound({
+              to: lostVisitor.visitorEmail,
+              name: lostVisitor.visitorName,
+              itemName: lostItem.name,
+              confidenceScore: Math.round(match.score * 100),
+              token: lostVisitor.token,
+              autoApproved: true,
+            });
+          }
+        } else {
+          await db.collection('notifications').add({
+            userId: lostUserId,
+            type: 'match_auto_approved',
+            message: `Great news! We're confident your lost item has been found (${Math.round(match.score * 100)}% match). A chat room has been created — tap to connect with the finder.`,
+            lostItemId,
+            foundItemId,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+          });
 
-        // Notify finder
-        await db.collection('notifications').add({
-          userId: foundUserId,
-          type: 'match_auto_approved',
-          message: `The item you found has been matched with its owner (${Math.round(match.score * 100)}% match). A chat room has been created — tap to connect.`,
-          lostItemId,
-          foundItemId,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        });
+          await sendPushNotification(lostUserId, {
+            title: '🎯 High Confidence Match Found!',
+            body: 'We\'re confident your lost item has been found. A chat room is ready.',
+            type: 'match_auto_approved',
+            url: '/my-chats',
+          });
+        }
 
-        await sendPushNotification(lostUserId, {
-          title: '🎯 High Confidence Match Found!',
-          body: 'We\'re confident your lost item has been found. A chat room is ready.',
-          type: 'match_auto_approved',
-          url: '/my-chats',
-        });
+        if (foundIsVisitor) {
+          if (foundVisitor) {
+            await sendVisitorMatchFound({
+              to: foundVisitor.visitorEmail,
+              name: foundVisitor.visitorName,
+              itemName: foundItem.name,
+              confidenceScore: Math.round(match.score * 100),
+              token: foundVisitor.token,
+              autoApproved: true,
+            });
+          }
+        } else {
+          await db.collection('notifications').add({
+            userId: foundUserId,
+            type: 'match_auto_approved',
+            message: `The item you found has been matched with its owner (${Math.round(match.score * 100)}% match). A chat room has been created — tap to connect.`,
+            lostItemId,
+            foundItemId,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+          });
 
-        await sendPushNotification(foundUserId, {
-          title: '✅ Item Matched With Owner!',
-          body: 'The item you found has been matched with its owner. A chat room is ready.',
-          type: 'match_auto_approved',
-          url: '/my-chats',
-        });
+          await sendPushNotification(foundUserId, {
+            title: '✅ Item Matched With Owner!',
+            body: 'The item you found has been matched with its owner. A chat room is ready.',
+            type: 'match_auto_approved',
+            url: '/my-chats',
+          });
+        }
 
       } else {
-        // Low confidence — notify lost owner only, pending admin review
-        await db.collection('notifications').add({
-          userId: lostUserId,
-          type: 'match_found',
-          message: `A potential match was found for your lost item (${Math.round(match.score * 100)}% match). Our team is reviewing it.`,
-          lostItemId,
-          foundItemId,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-        });
+        if (lostIsVisitor) {
+          if (lostVisitor) {
+            await sendVisitorMatchFound({
+              to: lostVisitor.visitorEmail,
+              name: lostVisitor.visitorName,
+              itemName: lostItem.name,
+              confidenceScore: Math.round(match.score * 100),
+              token: lostVisitor.token,
+              autoApproved: false,
+            });
+          }
+        } else {
+          await db.collection('notifications').add({
+            userId: lostUserId,
+            type: 'match_found',
+            message: `A potential match was found for your lost item (${Math.round(match.score * 100)}% match). Our team is reviewing it.`,
+            lostItemId,
+            foundItemId,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+          });
 
-        await sendPushNotification(lostUserId, {
-          title: '🔍 Potential Match Found!',
-          body: 'A potential match was found for your lost item. Our team is reviewing it.',
-          type: 'match_found',
-          url: '/listings',
-        });
+          await sendPushNotification(lostUserId, {
+            title: '🔍 Potential Match Found!',
+            body: 'A potential match was found for your lost item. Our team is reviewing it.',
+            type: 'match_found',
+            url: '/listings',
+          });
+        }
       }
     }
 
@@ -283,7 +363,6 @@ async function runMatching(newItemId, newItemType) {
   }
 }
 
-// Export for use in manual claim route
 function computeScore(itemA, itemB) {
   return computeCombinedScore(itemA, itemB);
 }
