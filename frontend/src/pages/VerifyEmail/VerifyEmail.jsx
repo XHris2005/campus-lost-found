@@ -1,20 +1,23 @@
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../../firebase/firebaseConfig';
-import { sendEmailVerification } from 'firebase/auth';
+import { auth, db } from '../../firebase/firebaseConfig';
+import { resendVerificationEmail } from '../../api/userApi';
+import { doc, updateDoc } from 'firebase/firestore';
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import Logo from '../../components/Logo/Logo';
 import { FiMail, FiRefreshCw } from 'react-icons/fi';
 import './VerifyEmail.css';
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [resent, setResent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleResend() {
     setLoading(true);
     try {
-      await sendEmailVerification(auth.currentUser);
+      await resendVerificationEmail();
       setResent(true);
     } catch (err) {
       console.error(err);
@@ -23,8 +26,18 @@ export default function VerifyEmail() {
   }
 
   async function handleContinue() {
-    await auth.currentUser?.reload();
-    if (auth.currentUser?.emailVerified) {
+    const verified = await refreshUser();
+    if (verified) {
+      // Keep Firestore's copy in sync — anywhere reading via Firestore
+      // (like an admin user list) has no access to the live Firebase Auth
+      // flag directly, only the signed-in user's own session does.
+      try {
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+          emailVerified: true,
+        });
+      } catch (err) {
+        console.error('Could not sync verification status:', err);
+      }
       navigate('/dashboard', { replace: true });
     } else {
       alert('Please verify your email before continuing.');

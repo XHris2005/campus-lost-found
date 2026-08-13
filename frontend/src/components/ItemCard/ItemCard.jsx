@@ -4,6 +4,10 @@ import './ItemCard.css';
 export default function ItemCard({ item, type, onClaim }) {
   const isLost = type === 'lost';
   const isMatched = item.status === 'matched';
+  // Only meaningful for visitor listings, which include a computed
+  // `claimable` field from the backend — Listings.jsx items never carry
+  // this property, so this badge never appears on the authenticated page.
+  const isPendingReview = type === 'found' && item.status === 'active' && item.claimable === false;
 
   function formatDate(dateStr) {
     if (!dateStr) return '';
@@ -13,7 +17,7 @@ export default function ItemCard({ item, type, onClaim }) {
   }
 
   return (
-    <div className={`item-card card card-hover ${isMatched ? 'item-card-matched' : ''}`}>
+    <div className={`item-card card card-hover ${isMatched ? 'item-card-matched' : ''} ${isPendingReview ? 'item-card-pending' : ''}`}>
       {/* Image */}
       <div className="item-card-image">
         {item.imageURL ? (
@@ -28,6 +32,9 @@ export default function ItemCard({ item, type, onClaim }) {
         </span>
         {isMatched && (
           <span className="item-matched-badge">Match Found</span>
+        )}
+        {isPendingReview && (
+          <span className="item-pending-badge">Pending Review</span>
         )}
       </div>
 
@@ -51,6 +58,12 @@ export default function ItemCard({ item, type, onClaim }) {
             {formatDate(isLost ? item.dateLost : item.dateFound)}
           </span>
         </div>
+
+        {isPendingReview && (
+          <p className="item-pending-notice">
+            This item already has a possible match under review.
+          </p>
+        )}
 
         {onClaim && (
           <button

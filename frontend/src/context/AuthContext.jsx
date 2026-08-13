@@ -8,6 +8,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,9 +23,11 @@ export function AuthProvider({ children }) {
           console.error('Error fetching user role:', err);
         }
         setCurrentUser(user);
+        setEmailVerified(user.emailVerified);
       } else {
         setCurrentUser(null);
         setUserRole(null);
+        setEmailVerified(false);
       }
       setLoading(false);
     });
@@ -32,7 +35,19 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const value = { currentUser, userRole, loading };
+  // Firebase mutates auth.currentUser in place on .reload(), so React never
+  // sees a new reference and won't re-render on its own. Call this after
+  // reload() to sync the live emailVerified flag into real React state —
+  // returns the fresh value so the caller can act on it immediately too.
+  async function refreshUser() {
+    if (!auth.currentUser) return false;
+    await auth.currentUser.reload();
+    const verified = auth.currentUser.emailVerified;
+    setEmailVerified(verified);
+    return verified;
+  }
+
+  const value = { currentUser, userRole, loading, emailVerified, refreshUser };
 
   // Show a clean loading screen instead of blocking all children
   if (loading) {

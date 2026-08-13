@@ -242,7 +242,20 @@
   min-width: 18px;
   text-align: center;
 }
-
+.sidebar-verify-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
 /* Mobile */
 @media (max-width: 768px) {
   .sidebar {

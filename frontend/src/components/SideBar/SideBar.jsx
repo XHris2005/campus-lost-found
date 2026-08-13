@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import {
   FiSearch, FiHome, FiList,
   FiMessageSquare, FiShield, FiLogOut,
-  FiPackage, FiCheckCircle, FiUsers, FiBriefcase,
+  FiPackage, FiCheckCircle, FiUsers, FiBriefcase, FiAlertTriangle,
 } from 'react-icons/fi';
 import Logo from '../Logo/Logo';
 import './SideBar.css';
@@ -24,7 +24,7 @@ const ADMIN_TABS = [
 ];
 
 export default function Sidebar({ isOpen, onClose, tabCounts = {} }) {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, emailVerified } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -47,6 +47,7 @@ export default function Sidebar({ isOpen, onClose, tabCounts = {} }) {
   }, [currentUser]);
 
   const badge = getBadge(recoveredCount);
+  const showUnverifiedBadge = userRole === 'lecturer' && currentUser && !emailVerified;
 
   async function handleLogout() {
     await signOut(auth);
@@ -86,6 +87,15 @@ export default function Sidebar({ isOpen, onClose, tabCounts = {} }) {
           <span className="sidebar-badge" style={{ color: badge.color, backgroundColor: badge.bg }}>
             {badge.icon} {badge.label}
           </span>
+          {showUnverifiedBadge && (
+            <button
+              type="button"
+              className="sidebar-verify-badge"
+              onClick={() => { navigate('/verify-email'); onClose(); }}
+            >
+              <FiAlertTriangle size={12} /> Email not verified
+            </button>
+          )}
         </div>
       </div>
 

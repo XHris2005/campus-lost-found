@@ -3,7 +3,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const { db, admin } = require('../config/firebase');
 const { verifyToken } = require('../middleware/authMiddleware');
-const { sendBusinessOwnerApproved, sendBusinessOwnerRejected } = require('../services/emailService');
+const { sendBusinessOwnerApproved, sendBusinessOwnerRejected, sendLecturerVerificationEmail } = require('../services/emailService');
 
 // DELETE /api/users/me — delete own account
 router.delete('/me', verifyToken, async (req, res) => {
@@ -201,8 +201,11 @@ router.post('/register-lecturer', lecturerRegisterLimiter, async (req, res) => {
     });
 
     // Send email verification
+    // Generate the link via Admin SDK (no quota, just returns a URL) and
+    // send it ourselves via Gmail SMTP — bypasses Firebase's own email
+    // delivery, which has a strict daily quota that testing alone can exhaust.
     const verificationLink = await admin.auth().generateEmailVerificationLink(email);
-    console.log(`Verification link for ${email}: ${verificationLink}`);
+    await sendLecturerVerificationEmail({ to: email, name, verificationLink });
     // Note: in production wire this through your email service (e.g. SendGrid, Nodemailer)
     // For now Firebase Auth's client SDK sendEmailVerification handles this on the frontend
 
@@ -226,6 +229,25 @@ router.post('/register-lecturer', lecturerRegisterLimiter, async (req, res) => {
   } catch (err) {
     console.error('Lecturer registration error:', err);
     res.status(500).json({ error: 'Could not create lecturer account.' });
+  }
+});
+
+// POST /api/users/resend-verification — resend via own email service
+router.post('/resend-verification', verifyToken, async (req, res) => {
+  try {
+    const email = req.user.email;
+    if (!email) return res.status(400).json({ error: 'No email associated with this account.' });
+
+    const userRecord = await admin.auth().getUser(req.user.uid);
+    const name = userRecord.displayName || 'there';
+
+    const verificationLink = await admin.auth().generateEmailVerificationLink(email);
+    await sendLecturerVerificationEmail({ to: email, name, verificationLink });
+
+    res.json({ message: 'Verification email resent.' });
+  } catch (err) {
+    console.error('Resend verification error:', err);
+    res.status(500).json({ error: 'Could not resend verification email.' });
   }
 });
 

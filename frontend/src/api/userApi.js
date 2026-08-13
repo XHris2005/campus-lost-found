@@ -85,3 +85,14 @@ export async function registerBusiness({ name, businessName, location, phone, em
   if (!res.ok) throw new Error(data.error || 'Could not create business account');
   return data;
 }
+
+export async function resendVerificationEmail() {
+  const token = await auth.currentUser.getIdToken();
+  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/resend-verification`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Could not resend verification email');
+  return data;
+}

@@ -181,9 +181,22 @@ router.get('/listings', async (req, res) => {
       .orderBy('createdAt', 'desc')
       .get();
 
-    // Strip to display-safe fields only — no embeddings, no internal metadata
-    const items = snapshot.docs.map((doc) => {
+    // For found items, compute whether they're actually claimable right now —
+    // same rule the manual claim route itself enforces, so the UI and the
+    // backend validation can never disagree.
+    const items = await Promise.all(snapshot.docs.map(async (doc) => {
       const data = doc.data();
+      let claimable = false;
+
+      if (type === 'found' && data.status === 'active') {
+        const activeMatchSnap = await db.collection('matches')
+          .where('foundItemId', '==', doc.id)
+          .where('status', 'in', ['approved', 'auto_approved', 'pending'])
+          .limit(1)
+          .get();
+        claimable = activeMatchSnap.empty;
+      }
+
       return {
         id: doc.id,
         name: data.name,
@@ -195,8 +208,9 @@ router.get('/listings', async (req, res) => {
         imageURL: data.imageURL,
         status: data.status,
         createdAt: data.createdAt,
+        ...(type === 'found' && { claimable }),
       };
-    });
+    }));
 
     res.json(items);
   } catch (err) {

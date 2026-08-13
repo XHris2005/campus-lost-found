@@ -183,7 +183,7 @@ export default function VisitorTrack() {
                         key={item.id}
                         item={item}
                         type="found"
-                        onClaim={() => setClaimingItem(item)}
+                        onClaim={item.claimable ? () => setClaimingItem(item) : null}
                       />
                     ))}
                   </div>

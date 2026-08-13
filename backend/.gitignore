@@ -7,3 +7,5 @@ node_modules
 
 # Service account key (VERY important)
 serviceAccountKey.json
+
+test-verify-lecturer.js

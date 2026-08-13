@@ -148,6 +148,18 @@ async function sendBusinessOwnerRejected({ to, name, businessName, reason }) {
   return sendEmail({ to, subject: 'Recova: Update on your business registration', html });
 }
 
+async function sendLecturerVerificationEmail({ to, name, verificationLink }) {
+  const html = wrapTemplate('Verify your email address', `
+    <p>Hi ${name},</p>
+    <p>Thanks for registering as a lecturer on Recova. Please verify your email to activate full access to your account.</p>
+    <p style="margin: 20px 0;">
+      <a href="${verificationLink}" style="background:${BRAND.navy}; color:${BRAND.white}; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">Verify Email Address</a>
+    </p>
+    <p style="color:#777; font-size: 13px;">If you didn't create this account, you can safely ignore this email.</p>
+  `);
+  return sendEmail({ to, subject: 'Recova: Verify your email address', html });
+}
+
 module.exports = {
   sendEmail,
   sendVisitorReportConfirmation,
@@ -156,4 +168,5 @@ module.exports = {
   sendVisitorChatMessage,
   sendBusinessOwnerApproved,
   sendBusinessOwnerRejected,
+  sendLecturerVerificationEmail
 };

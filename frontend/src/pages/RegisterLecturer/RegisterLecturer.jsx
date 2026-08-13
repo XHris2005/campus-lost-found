@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
@@ -38,11 +38,13 @@ export default function RegisterLecturer() {
     setLoading(true);
     try {
       // Create account via backend (Admin SDK) — returns lecturerId
+      // Create account via backend (Admin SDK) — returns lecturerId.
+      // The backend also generates and emails the verification link itself,
+      // via our own email service rather than Firebase's built-in delivery.
       const result = await registerLecturer({ name, email, password });
 
-      // Sign in with client SDK so we can send email verification
-      const { user } = await signInWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(user);
+      // Still sign in client-side so VerifyEmail.jsx has a currentUser to work with
+      await signInWithEmailAndPassword(auth, email, password);
 
       setLecturerId(result.lecturerId);
     } catch (err) {
