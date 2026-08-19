@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { registerLecturer } from '../../api/userApi';
 import Logo from '../../components/Logo/Logo';
+import RoleTabs from '../../components/RoleTabs/RoleTabs';
 import {
   FiLock, FiMail, FiUser, FiArrowRight,
   FiSun, FiMoon, FiCheckCircle, FiEye, FiEyeOff,
@@ -132,6 +133,7 @@ export default function RegisterLecturer() {
             <h2>Create Lecturer Account</h2>
             <p>Use your official UNICAL email address</p>
           </div>
+          <RoleTabs active="lecturer" mode="register" />
 
           {error && (
             <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
@@ -235,14 +237,6 @@ export default function RegisterLecturer() {
           <p className="auth-switch">
             Already have an account?{' '}
             <Link to="/lecturer-login">Sign in here</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Student?{' '}
-            <Link to="/register">Student registration</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Own a business?{' '}
-            <Link to="/register-business">Business registration</Link>
           </p>
         </div>
       </div>

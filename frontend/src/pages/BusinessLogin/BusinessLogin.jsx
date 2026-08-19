@@ -7,6 +7,7 @@ import { FiLock, FiArrowRight, FiMail, FiSun, FiMoon, FiEye, FiEyeOff, FiBriefca
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../../components/Logo/Logo';
+import RoleTabs from '../../components/RoleTabs/RoleTabs';
 import './BusinessLogin.css';
 
 export default function BusinessLogin() {
@@ -124,6 +125,7 @@ export default function BusinessLogin() {
             <h2>Business Sign In</h2>
             <p>Use your registered email address</p>
           </div>
+          <RoleTabs active="business" mode="login" />
 
           {error && (
             <div className="alert alert-error">
@@ -239,18 +241,6 @@ export default function BusinessLogin() {
           <p className="auth-switch">
             Don't have an account?{' '}
             <Link to="/register-business">Register here</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Student?{' '}
-            <Link to="/login">Student login</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Lecturer?{' '}
-            <Link to="/lecturer-login">Lecturer login</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Administrator?{' '}
-            <Link to="/admin-login">Admin login</Link>
           </p>
         </div>
       </div>

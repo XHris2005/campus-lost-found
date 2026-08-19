@@ -6,6 +6,7 @@ import { FiLock, FiArrowRight, FiMail, FiUser, FiSun, FiMoon, FiEye, FiEyeOff } 
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../../components/Logo/Logo';
+import RoleTabs from '../../components/RoleTabs/RoleTabs';
 import { lookupMatricEmail } from '../../api/userApi';
 import './Login.css';
 
@@ -113,6 +114,7 @@ export default function Login() {
             <h2>Welcome back</h2>
             <p>Sign in to your Recova account</p>
           </div>
+          <RoleTabs active="student" mode="login" />
 
           {error && (
             <div className="alert alert-error">
@@ -228,18 +230,6 @@ export default function Login() {
           <p className="auth-switch">
             Don't have an account?{' '}
             <Link to="/register">Create one here</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-  Lecturer?{' '}
-  <Link to="/lecturer-login">Lecturer login</Link>
-</p>
- <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Business owner?{' '}
-            <Link to="/business-login">Business login</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Administrator?{' '}
-            <Link to="/admin-login">Admin login</Link>
           </p>
         </div>
       </div>

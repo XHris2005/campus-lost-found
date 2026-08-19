@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { registerBusiness } from '../../api/userApi';
 import Logo from '../../components/Logo/Logo';
+import RoleTabs from '../../components/RoleTabs/RoleTabs';
 import {
   FiLock, FiMail, FiUser, FiArrowRight, FiBriefcase, FiMapPin, FiPhone,
   FiSun, FiMoon, FiClock, FiEye, FiEyeOff,
@@ -129,6 +130,7 @@ export default function RegisterBusiness() {
             <h2>Create Business Account</h2>
             <p>Your account will be reviewed by an admin before activation</p>
           </div>
+          <RoleTabs active="business" mode="register" />
 
           {error && (
             <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
@@ -279,12 +281,6 @@ export default function RegisterBusiness() {
           <p className="auth-switch">
             Already approved?{' '}
             <Link to="/business-login">Sign in here</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Student?{' '}
-            <Link to="/register">Student registration</Link>{' '}
-            &middot; Lecturer?{' '}
-            <Link to="/register-lecturer">Lecturer registration</Link>
           </p>
         </div>
       </div>

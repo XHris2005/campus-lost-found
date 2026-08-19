@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { verifyMatricNo, claimMatricNo } from '../../api/userApi';
 import Logo from '../../components/Logo/Logo';
+import RoleTabs from '../../components/RoleTabs/RoleTabs';
 import {
   FiLock, FiArrowRight, FiMail,
   FiSun, FiMoon, FiCheckCircle, FiEye, FiEyeOff,
@@ -118,6 +119,7 @@ export default function Register() {
             <h2>Create account</h2>
             <p>Get started with Recova today</p>
           </div>
+          <RoleTabs active="student" mode="register" />
 
           {/* Step indicators */}
           <div className="register-steps">
@@ -260,21 +262,10 @@ export default function Register() {
               </button>
             </form>
           )}
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-  Are you a lecturer?{' '}
-  <Link to="/register-lecturer">Lecturer registration</Link>
-</p>
-
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-  Own a business?{' '}
-  <Link to="/register-business">Business registration</Link>
-</p>
-
           <p className="auth-switch">
             Already have an account?{' '}
             <Link to="/login">Sign in here</Link>
           </p>
-
         </div>
       </div>
     </div>

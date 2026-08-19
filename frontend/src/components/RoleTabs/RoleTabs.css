@@ -1,0 +1,44 @@
+.role-tabs {
+  display: flex;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  gap: 2px;
+  margin-bottom: 1.75rem;
+}
+
+.role-tab {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-full);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.role-tab:hover:not(.role-tab-active) {
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+}
+
+.role-tab-active {
+  background-color: var(--accent);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 480px) {
+  .role-tabs {
+    flex-wrap: wrap;
+  }
+  .role-tab {
+    flex: 1 1 45%;
+  }
+}

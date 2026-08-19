@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiArrowRight, FiShield, FiSun, FiMoon } from 'react-icons/fi';
 import { useTheme } from '../../context/ThemeContext';
 import Logo from '../../components/Logo/Logo';
+import RoleTabs from '../../components/RoleTabs/RoleTabs';
 import './AdminLogin.css';
 
 export default function AdminLogin() {
@@ -58,6 +59,8 @@ export default function AdminLogin() {
 
         <h2>Admin Login</h2>
         <p>Restricted access — administrators only</p>
+
+        <RoleTabs active="admin" mode="login" />
 
         {error && (
           <div className="alert alert-error" style={{ marginBottom: '1rem' }}>

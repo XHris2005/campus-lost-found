@@ -6,6 +6,7 @@ import { FiLock, FiArrowRight, FiMail, FiSun, FiMoon, FiEye, FiEyeOff } from 're
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../../components/Logo/Logo';
+import RoleTabs from '../../components/RoleTabs/RoleTabs';
 import { lookupLecturerEmail } from '../../api/userApi';
 import './LecturerLogin.css';
 
@@ -112,6 +113,7 @@ export default function LecturerLogin() {
             <h2>Lecturer Sign In</h2>
             <p>Use your Lecturer ID or UNICAL email</p>
           </div>
+          <RoleTabs active="lecturer" mode="login" />
 
           {error && (
             <div className="alert alert-error">
@@ -228,18 +230,6 @@ export default function LecturerLogin() {
           <p className="auth-switch">
             Don't have an account?{' '}
             <Link to="/register-lecturer">Register here</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Student?{' '}
-            <Link to="/login">Student login</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Business owner?{' '}
-            <Link to="/business-login">Business login</Link>
-          </p>
-          <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
-            Administrator?{' '}
-            <Link to="/admin-login">Admin login</Link>
           </p>
         </div>
       </div>
